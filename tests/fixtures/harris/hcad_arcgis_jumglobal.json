@@ -1,0 +1,55 @@
+{
+  "displayFieldName": "owner_name_1",
+  "fieldAliases": {
+    "HCAD_NUM": "HCAD_NUM",
+    "owner_name_1": "owner_name_1",
+    "site_str_num": "site_str_num",
+    "site_str_name": "site_str_name",
+    "site_city": "site_city",
+    "site_zip": "site_zip",
+    "total_appraised_val": "total_appraised_val"
+  },
+  "fields": [
+    {
+      "name": "HCAD_NUM",
+      "type": "esriFieldTypeString",
+      "alias": "HCAD_NUM",
+      "length": 30
+    },
+    {
+      "name": "owner_name_1",
+      "type": "esriFieldTypeString",
+      "alias": "owner_name_1",
+      "length": 100
+    },
+    {
+      "name": "site_str_num",
+      "type": "esriFieldTypeInteger",
+      "alias": "site_str_num"
+    },
+    {
+      "name": "site_str_name",
+      "type": "esriFieldTypeString",
+      "alias": "site_str_name",
+      "length": 50
+    },
+    {
+      "name": "site_city",
+      "type": "esriFieldTypeString",
+      "alias": "site_city",
+      "length": 50
+    },
+    {
+      "name": "site_zip",
+      "type": "esriFieldTypeString",
+      "alias": "site_zip",
+      "length": 10
+    },
+    {
+      "name": "total_appraised_val",
+      "type": "esriFieldTypeDouble",
+      "alias": "total_appraised_val"
+    }
+  ],
+  "features": []
+}

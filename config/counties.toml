@@ -1,0 +1,40 @@
+# Phase 1 geography: Texas — Harris + Dallas (research recommendation)
+# Data-source priority ladder per county (bulk > API > portal_scrape)
+
+[[county]]
+fips = "48201"
+name = "Harris"
+state = "TX"
+enabled = true
+plaintiff = "HARRIS COUNTY"
+plaintiff_terms = ["HARRIS COUNTY TAX ASSESSOR-COLLECTOR", "HARRIS COUNTY", "COUNTY OF HARRIS"]
+case_type_filter = ["Tax", "Delinquent", "OCV"]
+ingest = ["bulk_dataset"]
+tax_lookup = ["arcgis_rest"]
+skip_trace = ["batchdata"]
+clerk_adapter = "adapters.tx.harris_clerk.HarrisClerkAdapter"
+tax_adapter = "adapters.tx.harris_tax.HarrisTaxAdapter"
+clerk_bulk_url = "https://www.hcdistrictclerk.com/common/e-services/PublicDatasets.aspx"
+arcgis_url = "https://www.gis.hctx.net/arcgis/rest/services/HCAD/Parcels/MapServer/0"
+owner_field = "owner_name_1"
+apn_field = "HCAD_NUM"
+
+[[county]]
+fips = "48113"
+name = "Dallas"
+state = "TX"
+enabled = true
+plaintiff = "DALLAS COUNTY"
+plaintiff_terms = ["DALLAS COUNTY TAX", "DALLAS COUNTY", "COUNTY OF DALLAS"]
+case_type_filter = ["Tax", "Delinquent"]
+ingest = ["portal_scrape"]
+tax_lookup = ["portal_scrape"]
+skip_trace = ["batchdata"]
+clerk_adapter = "adapters.tx.dallas_clerk.DallasClerkAdapter"
+tax_adapter = "adapters.tx.dallas_tax.DallasTaxAdapter"
+# Human landing page; adapter uses Tyler Odyssey Smart Search under DALLASPROD
+clerk_portal_url = "https://courtsportal.dallascounty.org/DALLASPROD"
+dcad_owner_url = "https://www.dallascad.org/searchowner.aspx"
+dcad_detail_url = "https://www.dallascad.org/AcctDetailRes.aspx?ID={apn}"
+# Bootstrap: no bulk civil datasets; Odyssey requires reCAPTCHA (ANTICAPTCHA_API_KEY)
+# or saved HTML fixtures under artifacts/raw/dallas/clerk/. DCAD is live ASP.NET.
