@@ -1,4 +1,11 @@
-requests>=2.31.0
-rapidfuzz>=3.6.0
-tomli>=2.0.0; python_version < "3.11"
-psycopg2-binary>=2.9.9
+# Production: Python 3.12+ with OpenSSL. Review pins when upgrading dependencies.
+requests==2.34.2; python_version >= "3.10"
+requests==2.32.5; python_version < "3.10"
+rapidfuzz==3.14.6; python_version >= "3.11"
+rapidfuzz==3.13.0; python_version < "3.11"
+urllib3==2.7.0; python_version >= "3.10"
+urllib3==2.6.3; python_version < "3.10"
+tomli==2.4.1; python_version < "3.11"
+# Retained for the concurrently implemented optional PostgreSQL backend.
+psycopg2-binary==2.9.13; python_version >= "3.10"
+psycopg2-binary==2.9.12; python_version < "3.10"
