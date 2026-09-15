@@ -6,6 +6,9 @@ leads.db
 *.db-shm
 *.db-journal
 *.db.bak
+*.pipeline.lock
+artifacts/*.db
+artifacts/phase1_validation*.json
 tests/_test_*.db
 config/secrets.env
 config/secrets.env.*

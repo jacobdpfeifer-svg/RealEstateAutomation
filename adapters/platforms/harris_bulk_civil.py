@@ -12,7 +12,7 @@ import requests
 
 from leads.models import CaseRecord
 from leads.http import SourceChangedError, SourceSession
-from leads.utils import case_dedupe_key, normalize_defendant, plaintiff_is_tax_suit
+from leads.utils import case_dedupe_key, normalize_defendant, plaintiff_is_tax_suit, write_private_text
 
 BULK_PAGE = "https://www.hcdistrictclerk.com/common/e-services/PublicDatasets.aspx"
 USER_AGENT = "re-tax-leads/0.1 (bulk-dataset importer; research)"
@@ -127,7 +127,7 @@ def save_artifact(base: Path, county: str, name: str, content: str) -> str:
     dest = base / county / day
     dest.mkdir(parents=True, exist_ok=True)
     path = dest / name
-    path.write_text(content, encoding="utf-8")
+    write_private_text(path, content)
     return str(path)
 
 

@@ -1,13 +1,24 @@
 from __future__ import annotations
 
 import hashlib
+import os
 import re
+from pathlib import Path
 from typing import Any, Iterable, Optional
 
 ENTITY_SUFFIXES = (
     " LLC", " INC", " CORP", " LTD", " LP", " LLP", " TRUST", " ESTATE",
     " ET AL", " ET UX", " ET VIR", " AKA", " D/B/A", " DB/A",
 )
+
+
+def write_private_text(path: Path, text: str) -> None:
+    """Create owner-only artifacts/exports, including when called outside the CLI."""
+    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as handle:
+        os.fchmod(handle.fileno(), 0o600)
+        handle.write(text)
 
 
 def case_dedupe_key(county_fips: str, case_number: str) -> str:

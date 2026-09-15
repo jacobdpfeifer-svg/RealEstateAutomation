@@ -25,7 +25,7 @@ from leads.review import (
     skip_lead,
 )
 from leads.secrets import load_secrets
-from leads.utils import parse_since_days
+from leads.utils import parse_since_days, write_private_text
 from leads.validate import run_phase1_validation
 
 
@@ -71,7 +71,7 @@ def cmd_run(args: argparse.Namespace) -> int:
     failed = False
     run_id = uuid.uuid4().hex
     # Even schema initialization must not touch the configured database in dry-run.
-    with db.db_session(":memory:" if args.dry_run else args.db) as conn:
+    with db.pipeline_lock(args.db, disabled=args.dry_run), db.db_session(":memory:" if args.dry_run else args.db) as conn:
         pipe = Pipeline(conn)
         for county in counties:
             started = time.monotonic()
@@ -92,7 +92,7 @@ def cmd_run(args: argparse.Namespace) -> int:
 
 
 def cmd_pipeline(args: argparse.Namespace) -> int:
-    with db.db_session(args.db) as conn:
+    with db.pipeline_lock(args.db), db.db_session(args.db) as conn:
         pipe = Pipeline(conn)
         if args.stage == "enrich-pending":
             result = pipe.enrich_pending(args.county.lower() if args.county else None)
@@ -143,7 +143,7 @@ def cmd_export(args: argparse.Namespace) -> int:
     with db.db_session(args.db) as conn:
         csv_data = export_csv(conn, args.status)
         if args.output:
-            Path(args.output).write_text(csv_data, encoding="utf-8")
+            write_private_text(Path(args.output), csv_data)
             print(f"Wrote {args.output}")
         else:
             print(csv_data, end="")

@@ -189,7 +189,9 @@ _PG_EXTRA_COLUMNS = (
 
 def connect(db_path: Path | str | None = None) -> Connection:
     dsn = _database_url()
-    if _is_postgres_url(dsn):
+    # Explicit scratch/test databases must stay local, regardless of credentials.
+    use_default = db_path is None or (str(db_path) != ":memory:" and Path(db_path).resolve() == DEFAULT_DB.resolve())
+    if use_default and _is_postgres_url(dsn):
         return PGConnection(dsn)
     path = Path(db_path) if db_path else DEFAULT_DB
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -234,6 +236,27 @@ def _ensure_column(conn: sqlite3.Connection, table: str, column: str, ddl: str) 
 
 def _ensure_column_pg(conn: PGConnection, table: str, column: str, ddl: str) -> None:
     conn.execute(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {column} {ddl}")
+
+
+@contextmanager
+def pipeline_lock(db_path: Path | str, *, disabled: bool = False):
+    """Serialize this operator's local pipeline processes on macOS/Linux."""
+    if disabled or str(db_path) == ":memory:":
+        yield
+        return
+    import fcntl
+
+    path = Path(db_path).resolve()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd = os.open(str(path) + ".pipeline.lock", os.O_CREAT | os.O_RDWR, 0o600)
+    try:
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            raise RuntimeError("A pipeline process already holds this database's lock") from None
+        yield
+    finally:
+        os.close(fd)
 
 
 @contextmanager
