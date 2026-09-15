@@ -52,8 +52,8 @@ def load_counties(config_path: Path | None = None) -> dict[str, CountyConfig]:
             ingest=list(row.get("ingest") or []),
             tax_lookup=list(row.get("tax_lookup") or []),
             skip_trace=list(row.get("skip_trace") or ["stub"]),
-            clerk_adapter=row["clerk_adapter"],
-            tax_adapter=row["tax_adapter"],
+            clerk_adapter=str(row.get("clerk_adapter") or ""),
+            tax_adapter=str(row.get("tax_adapter") or ""),
             raw=row,
         )
         out[cfg.fips] = cfg
@@ -75,6 +75,8 @@ def get_clerk_adapter(county_key: str, config_path: Path | None = None) -> Clerk
     cfg = counties[key]
     if not cfg.enabled:
         raise RuntimeError(f"County disabled: {cfg.name}")
+    if not cfg.clerk_adapter:
+        raise RuntimeError(f"No clerk adapter registered for {cfg.name} (probe-only)")
     cls = _import_class(cfg.clerk_adapter)
     return cls(cfg)
 
@@ -87,6 +89,8 @@ def get_tax_adapter(county_key: str, config_path: Path | None = None) -> TaxAdap
     cfg = counties[key]
     if not cfg.enabled:
         raise RuntimeError(f"County disabled: {cfg.name}")
+    if not cfg.tax_adapter:
+        raise RuntimeError(f"No tax adapter registered for {cfg.name} (probe-only)")
     cls = _import_class(cfg.tax_adapter)
     return cls(cfg)
 

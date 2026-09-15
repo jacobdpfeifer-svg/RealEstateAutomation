@@ -27,6 +27,18 @@ def approve_lead(conn, lead_id: int, note: str = "") -> None:
     ledger.record(conn, entity_type="lead", entity_id=lead_id, event_type="lead_approved", notes=note)
 
 
+def retry_lead(conn, lead_id: int, note: str = "") -> None:
+    """Explicitly requeue a failed lead after investigating the cause."""
+    cur = conn.execute(
+        "UPDATE lead SET pipeline_status = 'new', enrichment_attempts = 0, review_note = ?, "
+        "updated_at = ? WHERE id = ? AND pipeline_status IN ('error', 'dead_letter')",
+        (note, datetime.utcnow().isoformat(), lead_id),
+    )
+    if cur.rowcount != 1:
+        raise ValueError("Retry requires an existing error/dead_letter lead")
+    ledger.record(conn, entity_type="lead", entity_id=lead_id, event_type="enrichment_retry", notes=note)
+
+
 def reject_lead(conn, lead_id: int, note: str = "") -> None:
     db.update_lead_status(conn, lead_id, PipelineStatus.REJECTED.value, note)
     ledger.record(conn, entity_type="lead", entity_id=lead_id, event_type="lead_rejected", notes=note)
@@ -62,11 +74,12 @@ def paste_contact(
     contact = contact_from_manual(
         row["property_id"], name=name, phone=phone, email=email, address=address
     )
-    conn.execute(
+    cur = conn.execute(
         """
         INSERT INTO contact_record (
             property_id, name, phone, email, address, provider, confidence, retrieved_at, manual_paste
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+        RETURNING id
         """,
         (
             contact.property_id,
@@ -79,7 +92,7 @@ def paste_contact(
             contact.retrieved_at.isoformat(),
         ),
     )
-    contact_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+    contact_id = cur.fetchone()["id"]
     conn.execute(
         """
         UPDATE lead SET contact_id = ?, pipeline_status = ?, updated_at = ?
@@ -105,6 +118,8 @@ def export_csv(conn, status: str = "approved") -> str:
         "filed_date",
         "situs_address",
         "apn",
+        "property_type",
+        "total_value",
         "match_confidence",
         "contact_name",
         "phone",
@@ -125,6 +140,8 @@ def export_csv(conn, status: str = "approved") -> str:
                 "filed_date": r.get("filed_date"),
                 "situs_address": r.get("situs_address"),
                 "apn": r.get("apn"),
+                "property_type": r.get("property_type"),
+                "total_value": r.get("total_value"),
                 "match_confidence": r.get("match_confidence"),
                 "contact_name": r.get("contact_name"),
                 "phone": r.get("phone"),

@@ -4,10 +4,13 @@ import re
 from dataclasses import dataclass
 from html import unescape
 from typing import Any
+from urllib.parse import quote
 import requests
 from rapidfuzz import fuzz
 
 from leads.models import PropertyRecord
+from leads.http import SourceChangedError, SourceSession
+from leads.utils import parse_money
 
 USER_AGENT = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
@@ -146,7 +149,7 @@ class DCADOwnerSearch:
 
     def __init__(self, config: DCADConfig | None = None, session: requests.Session | None = None) -> None:
         self.config = config or DCADConfig()
-        self.session = session or requests.Session()
+        self.session = session or SourceSession()
         self.session.headers.setdefault("User-Agent", USER_AGENT)
 
     def search_by_owner(self, name: str, *, limit: int = 25) -> tuple[list[dict[str, Any]], str, int]:
@@ -173,48 +176,45 @@ class DCADOwnerSearch:
         return variants
 
     def _post_owner_search(self, name: str, *, limit: int = 25) -> tuple[list[dict[str, Any]], str, int]:
-        import time
-
-        last_status = 0
-        for attempt in range(3):
-            resp = self.session.get(self.config.owner_url, timeout=60)
-            last_status = resp.status_code
-            if resp.status_code == 403:
-                time.sleep(1.5 * (attempt + 1))
-                continue
-            resp.raise_for_status()
-            fields = {
-                "__EVENTTARGET": "",
-                "__EVENTARGUMENT": "",
-                "__VIEWSTATE": _parse_hidden(resp.text, "__VIEWSTATE"),
-                "__VIEWSTATEGENERATOR": _parse_hidden(resp.text, "__VIEWSTATEGENERATOR"),
-                "__EVENTVALIDATION": _parse_hidden(resp.text, "__EVENTVALIDATION"),
-                "txtOwnerName": name.strip(),
-                "cmdSubmit": "Search",
-                # Real property: RESIDENTIAL (commercial optional — dual select can empty results)
-                "AcctTypeCheckList1:chkAcctType:0": "on",
-            }
-            post = self.session.post(self.config.owner_url, data=fields, timeout=60)
-            last_status = post.status_code
-            if post.status_code == 403:
-                time.sleep(1.5 * (attempt + 1))
-                continue
-            post.raise_for_status()
-            rows = parse_owner_search_results(post.text)[:limit]
-            return rows, self.config.owner_url, post.status_code
-        return [], self.config.owner_url, last_status
+        resp = self.session.get(self.config.owner_url, timeout=60)
+        resp.raise_for_status()
+        viewstate = _parse_hidden(resp.text, "__VIEWSTATE")
+        if not viewstate or "txtOwnerName" not in resp.text:
+            raise SourceChangedError("DCAD owner search form changed")
+        fields = {
+            "__EVENTTARGET": "",
+            "__EVENTARGUMENT": "",
+            "__VIEWSTATE": viewstate,
+            "__VIEWSTATEGENERATOR": _parse_hidden(resp.text, "__VIEWSTATEGENERATOR"),
+            "__EVENTVALIDATION": _parse_hidden(resp.text, "__EVENTVALIDATION"),
+            "txtOwnerName": name.strip(),
+            "cmdSubmit": "Search",
+            "AcctTypeCheckList1:chkAcctType:0": "on",
+        }
+        post = self.session.post(self.config.owner_url, data=fields, timeout=60)
+        post.raise_for_status()
+        rows = parse_owner_search_results(post.text)
+        if not rows and not re.search(r"no (?:records|properties|matches) (?:were )?found", _cell_text(post.text), re.I):
+            raise SourceChangedError("DCAD returned no recognized rows or empty-result message")
+        return rows[:limit], self.config.owner_url, post.status_code
 
     def get_by_apn(self, apn: str) -> tuple[dict[str, str] | None, str, int]:
-        url = self.config.detail_url_template.format(apn=apn.strip())
-        resp = self.session.get(url, timeout=60)
-        if resp.status_code == 404 or "Account #" not in resp.text:
-            # Try commercial detail template
-            alt = url.replace("AcctDetailRes.aspx", "AcctDetailCom.aspx")
-            resp = self.session.get(alt, timeout=60)
-            url = alt
-        if resp.status_code >= 400 or "Account #" not in resp.text:
-            return None, url, resp.status_code
-        return parse_acct_detail(resp.text, apn_fallback=apn), url, resp.status_code
+        url = self.config.detail_url_template.format(apn=quote(apn.strip(), safe=""))
+        for candidate in dict.fromkeys([url, url.replace("AcctDetailRes.aspx", "AcctDetailCom.aspx")]):
+            try:
+                resp = self.session.get(candidate, timeout=60)
+                resp.raise_for_status()
+            except requests.HTTPError as exc:
+                if exc.response is not None and exc.response.status_code == 404:
+                    continue
+                raise
+            if "Account #" not in resp.text:
+                raise SourceChangedError("DCAD account detail markup changed")
+            detail = parse_acct_detail(resp.text, apn_fallback=apn)
+            if not detail["owner_of_record"] or not detail["situs_address"]:
+                raise SourceChangedError("DCAD account detail required fields missing")
+            return detail, candidate, resp.status_code
+        return None, url, 404
 
     def row_to_property(
         self,
@@ -244,6 +244,8 @@ class DCADOwnerSearch:
             years_delinquent=None,
             assessor_url=self.config.detail_url_template.format(apn=apn),
             match_confidence=conf,
+            property_type=str(row.get("property_type") or "").strip(),
+            total_value=parse_money(row.get("total_value")),
         )
 
     def detail_to_property(
@@ -264,4 +266,6 @@ class DCADOwnerSearch:
             years_delinquent=None,
             assessor_url=self.config.detail_url_template.format(apn=apn),
             match_confidence=match_confidence,
+            property_type=str(detail.get("property_type") or "").strip(),
+            total_value=parse_money(detail.get("total_value")),
         )

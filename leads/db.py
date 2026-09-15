@@ -1,14 +1,76 @@
 from __future__ import annotations
 
+import os
+import re
 import sqlite3
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Generator, Iterable, Optional
+from typing import Any, Generator, Iterable, Optional, Union
 
 DEFAULT_DB = Path(__file__).resolve().parent.parent / "leads.db"
+SCHEMA_VERSION = 1
 
-SCHEMA = """
+# Backing store is chosen at connect() time via DATABASE_URL. Unset (or
+# sqlite:// / a bare path) keeps the original local-file SQLite behavior;
+# postgres:// or postgresql:// switches to Postgres via PGConnection below.
+# See docs/PROJECT_PLAN.md §8 for why this was held back until git existed.
+_PG_SCHEMES = ("postgres://", "postgresql://")
+
+
+def _database_url() -> str:
+    return os.environ.get("DATABASE_URL", "")
+
+
+def _is_postgres_url(url: str) -> bool:
+    return url.startswith(_PG_SCHEMES)
+
+
+_NAMED_PARAM_RE = re.compile(r":(\w+)")
+
+
+def _to_pg_sql(sql: str) -> str:
+    """Translate sqlite-style `?` / `:name` placeholders to psycopg2's `%s` / `%(name)s`."""
+    sql = _NAMED_PARAM_RE.sub(r"%(\1)s", sql)
+    return sql.replace("?", "%s")
+
+
+class PGConnection:
+    """Thin wrapper giving a psycopg2 connection the sqlite3.Connection interface
+    the rest of this codebase already uses: .execute()/.executescript()/.commit()/
+    .rollback()/.close(), with rows addressable by column name."""
+
+    def __init__(self, dsn: str) -> None:
+        import psycopg2
+        import psycopg2.extras
+
+        self._psycopg2 = psycopg2
+        self._cursor_factory = psycopg2.extras.RealDictCursor
+        self._conn = psycopg2.connect(dsn)
+
+    def execute(self, sql: str, params: Any = ()):
+        cur = self._conn.cursor(cursor_factory=self._cursor_factory)
+        cur.execute(_to_pg_sql(sql), params)
+        return cur
+
+    def executescript(self, sql: str) -> None:
+        cur = self._conn.cursor()
+        cur.execute(sql)
+        cur.close()
+
+    def commit(self) -> None:
+        self._conn.commit()
+
+    def rollback(self) -> None:
+        self._conn.rollback()
+
+    def close(self) -> None:
+        self._conn.close()
+
+
+Connection = Union[sqlite3.Connection, PGConnection]
+
+SCHEMA_SQLITE = """
 CREATE TABLE IF NOT EXISTS case_record (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     county_fips TEXT NOT NULL,
@@ -34,6 +96,8 @@ CREATE TABLE IF NOT EXISTS property_record (
     years_delinquent INTEGER,
     assessor_url TEXT NOT NULL DEFAULT '',
     match_confidence REAL NOT NULL DEFAULT 0,
+    property_type TEXT NOT NULL DEFAULT '',
+    total_value REAL,
     dedupe_key TEXT NOT NULL,
     UNIQUE(case_id, dedupe_key)
 );
@@ -88,7 +152,7 @@ CREATE TABLE IF NOT EXISTS call_log (
 -- Append-only outcomes ledger: one row per meaningful event tied to any
 -- entity (lead, buyer match, drafted/sent email, etc). Rows are never
 -- updated or deleted, only inserted — this is the record the matching and
--- outreach subsystems learn from later (see docs/PROJECT_PLAN.md §8).
+-- outreach subsystems learn from later (matching / outreach phases).
 CREATE TABLE IF NOT EXISTS outcome_event (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     entity_type TEXT NOT NULL,
@@ -110,26 +174,73 @@ CREATE INDEX IF NOT EXISTS idx_outcome_event_type ON outcome_event(event_type);
 CREATE INDEX IF NOT EXISTS idx_outcome_template ON outcome_event(template_version);
 """
 
+# Same tables for Postgres: SERIAL replaces INTEGER PRIMARY KEY AUTOINCREMENT;
+# everything else (types, ON CONFLICT/EXCLUDED, indexes) is valid on both engines.
+SCHEMA_POSTGRES = re.sub(
+    r"INTEGER PRIMARY KEY AUTOINCREMENT", "SERIAL PRIMARY KEY", SCHEMA_SQLITE
+)
 
-def connect(db_path: Path | str | None = None) -> sqlite3.Connection:
+_PG_EXTRA_COLUMNS = (
+    ("property_record", "property_type", "TEXT NOT NULL DEFAULT ''"),
+    ("property_record", "total_value", "REAL"),
+    ("lead", "enrichment_attempts", "INTEGER NOT NULL DEFAULT 0"),
+)
+
+
+def connect(db_path: Path | str | None = None) -> Connection:
+    dsn = _database_url()
+    if _is_postgres_url(dsn):
+        return PGConnection(dsn)
     path = Path(db_path) if db_path else DEFAULT_DB
     path.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(path)
+    conn = sqlite3.connect(path, timeout=30)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
 
-def migrate(conn: sqlite3.Connection) -> None:
-    conn.executescript(SCHEMA)
-    conn.commit()
+def migrate(conn: Connection) -> None:
+    if isinstance(conn, PGConnection):
+        # Postgres DDL (IF NOT EXISTS / ADD COLUMN IF NOT EXISTS) is already
+        # idempotent, so it doesn't need the sqlite user_version gate below.
+        conn.executescript(SCHEMA_POSTGRES)
+        for table, column, ddl in _PG_EXTRA_COLUMNS:
+            _ensure_column_pg(conn, table, column, ddl)
+        conn.commit()
+        return
+
+    version = conn.execute("PRAGMA user_version").fetchone()[0]
+    if version > SCHEMA_VERSION:
+        raise RuntimeError("Database schema is newer than this application")
+    if version == 0:
+        try:
+            conn.executescript("BEGIN IMMEDIATE;\n" + SCHEMA_SQLITE)
+            _ensure_column(conn, "property_record", "property_type", "TEXT NOT NULL DEFAULT ''")
+            _ensure_column(conn, "property_record", "total_value", "REAL")
+            _ensure_column(conn, "lead", "enrichment_attempts", "INTEGER NOT NULL DEFAULT 0")
+            conn.execute("PRAGMA user_version = 1")
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+
+
+def _ensure_column(conn: sqlite3.Connection, table: str, column: str, ddl: str) -> None:
+    # Identifiers/DDL are internal constants, never data from records or CLI input.
+    cols = {row[1] for row in conn.execute(f"PRAGMA table_info({table})")}
+    if column not in cols:
+        conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {ddl}")
+
+
+def _ensure_column_pg(conn: PGConnection, table: str, column: str, ddl: str) -> None:
+    conn.execute(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {column} {ddl}")
 
 
 @contextmanager
-def db_session(db_path: Path | str | None = None) -> Generator[sqlite3.Connection, None, None]:
+def db_session(db_path: Path | str | None = None) -> Generator[Connection, None, None]:
     conn = connect(db_path)
-    migrate(conn)
     try:
+        migrate(conn)
         yield conn
         conn.commit()
     except Exception:
@@ -224,7 +335,7 @@ def list_leads(conn: sqlite3.Connection, status: str | None = None) -> Iterable[
         return conn.execute(
             """
             SELECT l.*, c.case_number, c.defendant_raw, c.plaintiff, c.filed_date,
-                   p.situs_address, p.apn, p.match_confidence,
+                   p.situs_address, p.apn, p.match_confidence, p.property_type, p.total_value,
                    ct.phone, ct.email, ct.name AS contact_name
             FROM lead l
             JOIN case_record c ON c.id = l.case_id
@@ -237,14 +348,14 @@ def list_leads(conn: sqlite3.Connection, status: str | None = None) -> Iterable[
         ).fetchall()
     return conn.execute(
         """
-        SELECT l.*, c.case_number, c.defendant_raw, c.plaintiff, c.filed_date,
-               p.situs_address, p.apn, p.match_confidence,
-               ct.phone, ct.email, ct.name AS contact_name
-        FROM lead l
-        JOIN case_record c ON c.id = l.case_id
-        LEFT JOIN property_record p ON p.id = l.property_id
-        LEFT JOIN contact_record ct ON ct.id = l.contact_id
-        ORDER BY l.priority_score DESC, c.filed_date DESC
+            SELECT l.*, c.case_number, c.defendant_raw, c.plaintiff, c.filed_date,
+                   p.situs_address, p.apn, p.match_confidence, p.property_type, p.total_value,
+                   ct.phone, ct.email, ct.name AS contact_name
+            FROM lead l
+            JOIN case_record c ON c.id = l.case_id
+            LEFT JOIN property_record p ON p.id = l.property_id
+            LEFT JOIN contact_record ct ON ct.id = l.contact_id
+            ORDER BY l.priority_score DESC, c.filed_date DESC
         """
     ).fetchall()
 
@@ -267,6 +378,7 @@ def insert_outcome_event(
             entity_type, entity_id, event_type, weight, channel,
             template_version, matching_version, notes, occurred_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        RETURNING id
         """,
         (
             entity_type,
@@ -280,7 +392,7 @@ def insert_outcome_event(
             datetime.utcnow().isoformat(),
         ),
     )
-    return int(cur.lastrowid)
+    return int(cur.fetchone()["id"])
 
 
 def outcome_events(

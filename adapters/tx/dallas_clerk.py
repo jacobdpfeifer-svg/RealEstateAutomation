@@ -16,7 +16,7 @@ class DallasClerkAdapter:
     """
     Dallas County district/county courts via Tyler Odyssey Smart Search.
 
-    Live portal access requires reCAPTCHA (ANTICAPTCHA_API_KEY or
+    Explicitly enabled live portal access requires reCAPTCHA (ANTICAPTCHA_API_KEY or
     DALLAS_RECAPTCHA_TOKEN). When those are unset, the adapter reads saved
     HTML fixtures from artifacts/raw/dallas/clerk/ (or DALLAS_CLERK_FIXTURE_DIR).
     """
@@ -45,11 +45,8 @@ class DallasClerkAdapter:
         self._cache: list[CaseRecord] = []
 
     def _can_live_search(self) -> bool:
-        return bool(
-            os.environ.get("ANTICAPTCHA_API_KEY", "").strip()
-            or os.environ.get("DALLAS_RECAPTCHA_TOKEN", "").strip()
-            or os.environ.get("DALLAS_CLERK_FORCE_LIVE", "").strip() == "1"
-        )
+        # An API key is not evidence of permission to automate this county portal.
+        return os.environ.get("DALLAS_CLERK_LIVE_ENABLED", "") == "1"
 
     def search_tax_suits(self, since: date) -> list[CaseRecord]:
         terms = self.cfg.plaintiff_terms or [self.plaintiff_search_term]
@@ -75,11 +72,11 @@ class DallasClerkAdapter:
                 if case.case_number not in seen:
                     cases.append(case)
                     seen.add(case.case_number)
-        elif not cases:
+        elif not cases and not any(self.fixture_dir.glob("*.html")):
             raise RuntimeError(
                 "Dallas ClerkAdapter: no fixtures found and live Odyssey search is "
-                "blocked without ANTICAPTCHA_API_KEY / DALLAS_RECAPTCHA_TOKEN. "
-                f"Save Smart Search HTML under {self.fixture_dir} or configure captcha. "
+                "disabled by default. "
+                f"Save Smart Search HTML under {self.fixture_dir}; prefer the official civil index subscription. "
                 f"Portal: {self.portal_url}"
             )
 

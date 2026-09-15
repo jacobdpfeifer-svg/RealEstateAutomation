@@ -42,6 +42,8 @@ class TestDCADParsing(unittest.TestCase):
         prop = client.row_to_property(rows[0], case_id=1, match_confidence=0.9, query_name="JOHNSON ALDA")
         self.assertEqual(prop.apn, rows[0]["apn"])
         self.assertGreaterEqual(prop.match_confidence, 0.85)
+        self.assertEqual(prop.property_type.upper(), "RESIDENTIAL")
+        self.assertEqual(prop.total_value, 280620.0)
 
 
 class TestDallasOdysseyFixtures(unittest.TestCase):
@@ -124,7 +126,7 @@ class TestBatchDataProvider(unittest.TestCase):
             def json(self):
                 return mock_json
 
-        with patch("requests.post", return_value=FakeResp()):
+        with patch.object(provider.session, "post", return_value=FakeResp()):
             contacts = provider.trace(
                 name="Jane Owner",
                 address="100 Main St",

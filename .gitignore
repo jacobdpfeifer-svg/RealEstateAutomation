@@ -2,6 +2,15 @@
 __pycache__/
 *.pyc
 leads.db
+*.db-wal
+*.db-shm
+*.db-journal
+*.db.bak
+tests/_test_*.db
 config/secrets.env
+config/secrets.env.*
+!config/secrets.env.example
 artifacts/raw/
+artifacts/runtime/
+logs/
 exports/

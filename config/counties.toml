@@ -38,3 +38,57 @@ dcad_owner_url = "https://www.dallascad.org/searchowner.aspx"
 dcad_detail_url = "https://www.dallascad.org/AcctDetailRes.aspx?ID={apn}"
 # Bootstrap: no bulk civil datasets; Odyssey requires reCAPTCHA (ANTICAPTCHA_API_KEY)
 # or saved HTML fixtures under artifacts/raw/dallas/clerk/. DCAD is live ASP.NET.
+
+# Phase 2 probe-only metros (enabled=false until adapters exist).
+# Probe first: python3 scripts/bootstrap_county.py --county next
+
+[[county]]
+fips = "48439"
+name = "Tarrant"
+state = "TX"
+enabled = false
+plaintiff = "TARRANT COUNTY"
+plaintiff_terms = ["TARRANT COUNTY TAX", "TARRANT COUNTY", "COUNTY OF TARRANT"]
+case_type_filter = ["Tax", "Delinquent"]
+ingest = ["portal_scrape"]
+tax_lookup = ["arcgis_rest"]
+skip_trace = ["batchdata"]
+clerk_portal_url = "https://odyssey.tarrantcounty.com/PublicAccess/default.aspx"
+arcgis_url = "https://mapit.tarrantcounty.com/arcgis/rest/services/Dynamic/TADParcels/FeatureServer/0"
+# Probe: clerk is Odyssey PublicAccess (no public bulk). Tax is TAD ArcGIS REST.
+# Do not write a portal scraper until this probe result is confirmed live.
+
+[[county]]
+fips = "48029"
+name = "Bexar"
+state = "TX"
+enabled = false
+plaintiff = "BEXAR COUNTY"
+plaintiff_terms = ["BEXAR COUNTY TAX", "BEXAR COUNTY", "COUNTY OF BEXAR"]
+case_type_filter = ["Tax", "Delinquent"]
+ingest = ["portal_scrape"]
+tax_lookup = ["arcgis_rest"]
+skip_trace = ["batchdata"]
+clerk_portal_url = "https://portal-txbexar.tylertech.cloud/Portal/"
+arcgis_url = "https://maps.bexar.org/arcgis/rest/services/Parcels/MapServer/0"
+owner_field = "Owner"
+apn_field = "AcctNumb"
+# Probe: Tyler Odyssey cloud portal for clerk; BCAD parcels MapServer for tax.
+
+[[county]]
+fips = "04013"
+name = "Maricopa"
+state = "AZ"
+enabled = false
+plaintiff = "MARICOPA COUNTY"
+plaintiff_terms = ["MARICOPA COUNTY", "COUNTY OF MARICOPA"]
+case_type_filter = ["Tax", "Delinquent"]
+ingest = ["portal_scrape"]
+tax_lookup = ["api"]
+skip_trace = ["batchdata"]
+clerk_portal_url = "https://www.superiorcourt.maricopa.gov/docket/civilcourtcases/casesearch.asp"
+assessor_search_url = "https://mcassessor.maricopa.gov/search/property/"
+arcgis_url = "https://gis.mcassessor.maricopa.gov/arcgis/rest/services/Parcels/MapServer/0"
+# Probe: civil docket is HTML search (bulk requires AZ Rule 123 request).
+# Assessor has a documented JSON search API plus ArcGIS parcels.
+

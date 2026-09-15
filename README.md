@@ -6,6 +6,8 @@ Marketplace roadmap (buyer pipeline, matching, outreach): see [`docs/PROJECT_PLA
 
 **Phase 1 geography:** Texas — Harris (48201) + Dallas (48113)
 
+**Phase 2 probes (disabled, no adapters yet):** Tarrant (48439), Bexar (48029), Maricopa AZ (04013)
+
 ## Setup
 
 ```bash
@@ -17,11 +19,27 @@ cp config/secrets.env.example config/secrets.env
 # Add BATCHDATA_API_KEY (and optionally ANTICAPTCHA_API_KEY for live Dallas clerk)
 ```
 
+### Database
+
+Defaults to a local SQLite file (`leads.db`) — nothing else to set up. For Postgres:
+
+```bash
+brew install postgresql@16
+brew services start postgresql@16
+createdb re_tax_leads
+# In config/secrets.env:
+# DATABASE_URL=postgresql://localhost:5432/re_tax_leads
+```
+
 ## CLI
 
 ```bash
-# Bootstrap county probes
+# Bootstrap county probes (Harris/Dallas plus Tarrant, Bexar, Maricopa)
 python3 scripts/bootstrap_county.py --county all
+python3 scripts/bootstrap_county.py --county next
+
+# Phase 1 validation (Harris dry-run + Dallas fixture ingest)
+python3 -m leads validate -o artifacts/phase1_validation.json
 
 # Ingest + enrich Harris tax suits (last 7 days)
 python3 -m leads run --county harris --since 7d
@@ -51,6 +69,7 @@ python3 -m leads export --status approved -o exports/approved.csv
 - **Dallas Stage 1:** Tyler Odyssey Smart Search (`courtsportal.dallascounty.org`) — reCAPTCHA for anonymous use, or save result HTML under `artifacts/raw/dallas/clerk/`
 - **Dallas Stage 2:** DCAD ASP.NET owner search (`searchowner.aspx`)
 - **Skip trace:** BatchData v3 (`BATCHDATA_API_KEY`); falls back to stub if the key is missing
+- **Phase 2:** Tarrant/Bexar/Maricopa are in `config/counties.toml` as `enabled = false`. Probe them with `python3 scripts/bootstrap_county.py --county next` before writing adapters.
 
 ## Dallas clerk fixtures
 
@@ -60,6 +79,14 @@ Anonymous Odyssey search requires reCAPTCHA. Until `ANTICAPTCHA_API_KEY` is set:
 2. Search business name `DALLAS COUNTY TAX*` with a file-date range
 3. Save the results HTML to `artifacts/raw/dallas/clerk/*.html`
 4. Re-run `python3 -m leads run --county dallas`
+
+## Phase 1 validation
+
+```bash
+python3 -m leads validate
+```
+
+Uses Dallas Odyssey HTML under `artifacts/raw/dallas/clerk/` when `ANTICAPTCHA_API_KEY` is unset. Harris is dry-run against the live bulk dataset. Skip-trace uses BatchData if `BATCHDATA_API_KEY` is set, otherwise the stub. Results go to `artifacts/phase1_validation.db` (not `leads.db`).
 
 ## Daily job
 

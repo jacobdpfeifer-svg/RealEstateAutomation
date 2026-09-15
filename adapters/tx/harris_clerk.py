@@ -16,9 +16,10 @@ class HarrisClerkAdapter:
         self.cfg = cfg
         self.downloader = HarrisBulkDownloader(artifact_dir=artifact_dir)
         self._cache: list[CaseRecord] = []
+        self.fetch_logs: list[dict] = []
 
     def search_tax_suits(self, since: date) -> list[CaseRecord]:
-        cases, _logs = self.downloader.fetch_summaries_since(
+        cases, self.fetch_logs = self.downloader.fetch_summaries_since(
             since=since,
             plaintiff_terms=self.cfg.plaintiff_terms,
             county_fips=self.county_fips,

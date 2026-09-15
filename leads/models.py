@@ -15,6 +15,7 @@ class PipelineStatus(str, Enum):
     CONTACTED = "contacted"
     CLOSED = "closed"
     ERROR = "error"
+    DEAD_LETTER = "dead_letter"
 
 
 @dataclass
@@ -43,6 +44,8 @@ class PropertyRecord:
     years_delinquent: Optional[int]
     assessor_url: str
     match_confidence: float
+    property_type: str = ""
+    total_value: Optional[float] = None
     id: Optional[int] = None
 
 

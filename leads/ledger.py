@@ -2,7 +2,7 @@
 Outcomes ledger: an append-only record of what the system did and what
 happened as a result, tied to any entity (a lead, a buyer match, a drafted
 or sent email, ...). This is the "memory" the matching and outreach
-subsystems will eventually learn from — see docs/PROJECT_PLAN.md §8.
+subsystems will eventually learn from (matching / outreach phases).
 
 Nothing here trains a model. It just makes sure every win and every loss is
 captured, with enough detail (which template/matching version produced it)

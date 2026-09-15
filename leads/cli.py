@@ -3,30 +3,34 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import os
+import time
+import uuid
 from datetime import date, timedelta
 from pathlib import Path
 
 from adapters.registry import list_enabled_counties
 from leads import db, ledger
 from leads.pipeline import Pipeline
+from leads.http import safe_error
+from leads.observability import configure_logging, event
+from leads.probe import catalog_keys, load_probe_catalog, probe_keys
 from leads.review import (
     approve_lead,
     export_csv,
     list_review_queue,
     paste_contact,
     reject_lead,
+    retry_lead,
     skip_lead,
 )
 from leads.secrets import load_secrets
 from leads.utils import parse_since_days
+from leads.validate import run_phase1_validation
 
 
 def _project_root() -> Path:
     return Path(__file__).resolve().parent.parent
-
-
-# Load config/secrets.env once at import so BatchData / captcha keys are available.
-load_secrets()
 
 
 def cmd_state(args: argparse.Namespace) -> int:
@@ -38,6 +42,7 @@ def cmd_state(args: argparse.Namespace) -> int:
         errors = conn.execute(
             "SELECT COUNT(*) AS n FROM lead WHERE pipeline_status = 'error'"
         ).fetchone()["n"]
+        dead_letter = conn.execute("SELECT COUNT(*) AS n FROM lead WHERE pipeline_status = 'dead_letter'").fetchone()["n"]
         last_err = conn.execute(
             "SELECT error, retrieved_at FROM fetch_log WHERE error != '' ORDER BY id DESC LIMIT 1"
         ).fetchone()
@@ -45,6 +50,7 @@ def cmd_state(args: argparse.Namespace) -> int:
             "counties": summary,
             "review_backlog": backlog,
             "errors": errors,
+            "dead_letter": dead_letter,
             "last_error": dict(last_err) if last_err else None,
         }
         print(json.dumps(out, indent=2))
@@ -62,15 +68,27 @@ def cmd_run(args: argparse.Namespace) -> int:
         print("Specify --county or --all-enabled", file=sys.stderr)
         return 2
 
-    with db.db_session(args.db) as conn:
+    failed = False
+    run_id = uuid.uuid4().hex
+    # Even schema initialization must not touch the configured database in dry-run.
+    with db.db_session(":memory:" if args.dry_run else args.db) as conn:
         pipe = Pipeline(conn)
         for county in counties:
+            started = time.monotonic()
+            event("county_started", run_id=run_id, county=county)
             try:
                 result = pipe.run_all(county, since, dry_run=args.dry_run)
+                failed = failed or bool(result.get("enrich", {}).get("errors", 0))
                 print(json.dumps({county: result}, indent=2))
-            except (NotImplementedError, RuntimeError) as exc:
-                print(f"{county}: {exc}", file=sys.stderr)
-    return 0
+                event("county_finished", run_id=run_id, county=county,
+                      elapsed_seconds=round(time.monotonic() - started, 3), result=result)
+            except Exception as exc:
+                conn.rollback()
+                failed = True
+                event("county_failed", run_id=run_id, county=county, error=safe_error(exc),
+                      elapsed_seconds=round(time.monotonic() - started, 3))
+                print(f"{county}: {safe_error(exc)}; check source access and adapter contracts", file=sys.stderr)
+    return 1 if failed else 0
 
 
 def cmd_pipeline(args: argparse.Namespace) -> int:
@@ -84,7 +102,8 @@ def cmd_pipeline(args: argparse.Namespace) -> int:
             print(f"Unknown stage: {args.stage}", file=sys.stderr)
             return 2
         print(json.dumps(result, indent=2))
-    return 0
+        event("stage_finished", stage=args.stage, result=result)
+    return 1 if result.get("errors", 0) else 0
 
 
 def cmd_review(args: argparse.Namespace) -> int:
@@ -101,6 +120,9 @@ def cmd_review(args: argparse.Namespace) -> int:
         elif args.review_cmd == "skip":
             skip_lead(conn, args.lead_id, args.note or "")
             print(f"Skipped lead {args.lead_id}")
+        elif args.review_cmd == "retry":
+            retry_lead(conn, args.lead_id, args.note or "")
+            print(f"Requeued lead {args.lead_id}")
         elif args.review_cmd == "paste":
             paste_contact(
                 conn,
@@ -158,6 +180,48 @@ def cmd_ledger(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_validate(args: argparse.Namespace) -> int:
+    root = _project_root()
+    default_db = str(root / "leads.db")
+    db_path = args.db
+    if Path(args.db).resolve() == Path(default_db).resolve():
+        db_path = str(root / "artifacts" / "phase1_validation.db")
+    report = run_phase1_validation(db_path, since=args.since, skip_enrich=args.skip_enrich)
+    text = json.dumps(report, indent=2, default=str)
+    print(text)
+    if args.output:
+        Path(args.output).write_text(text, encoding="utf-8")
+        print(f"Wrote {args.output}", file=sys.stderr)
+    return 0 if report.get("runs", {}).get("dallas", {}).get("ok") else 1
+
+
+def cmd_probe(args: argparse.Namespace) -> int:
+    keys = catalog_keys()
+    county = args.county.lower().strip()
+    if county == "all":
+        selected = keys
+    elif county == "next":
+        selected = [k for k in ("tarrant", "bexar", "maricopa") if k in keys]
+    elif county in keys:
+        selected = [county]
+    else:
+        print(f"Unknown county {county!r}. Known: {', '.join(keys)}, all, next", file=sys.stderr)
+        return 2
+    report = {
+        "selected": selected,
+        "catalog": [
+            {"key": row["key"], "fips": row["fips"], "name": row["name"]}
+            for row in load_probe_catalog()
+        ],
+        "probes": probe_keys(selected),
+    }
+    text = json.dumps(report, indent=2)
+    print(text)
+    if args.output:
+        Path(args.output).write_text(text, encoding="utf-8")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     root = _project_root()
     parser = argparse.ArgumentParser(prog="leads", description="Tax lawsuit RE lead pipeline")
@@ -186,7 +250,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_list.add_argument("--status", default="pending")
     p_list.set_defaults(func=cmd_review)
 
-    for action in ("approve", "reject", "skip"):
+    for action in ("approve", "reject", "skip", "retry"):
         p = review_sub.add_parser(action)
         p.add_argument("lead_id", type=int)
         p.add_argument("--note", default="")
@@ -235,6 +299,24 @@ def build_parser() -> argparse.ArgumentParser:
     p_ledger_history.add_argument("--entity-id", dest="entity_id", type=int, default=None)
     p_ledger_history.set_defaults(func=cmd_ledger)
 
+    p_validate = sub.add_parser(
+        "validate",
+        help="Phase 1 Harris/Dallas validation (dry-run Harris, Dallas fixtures, skip-trace preflight)",
+    )
+    p_validate.add_argument("--since", default="60d")
+    p_validate.add_argument(
+        "--skip-enrich",
+        action="store_true",
+        help="Dallas ingest dry-run only (no DCAD / skip-trace)",
+    )
+    p_validate.add_argument("-o", "--output", default=None, help="Write JSON report")
+    p_validate.set_defaults(func=cmd_validate)
+
+    p_probe = sub.add_parser("probe", help="Classify county clerk/tax URLs (bulk > api > portal)")
+    p_probe.add_argument("--county", default="next", help="County key, all, or next")
+    p_probe.add_argument("-o", "--output", default=None)
+    p_probe.set_defaults(func=cmd_probe)
+
     return parser
 
 
@@ -245,6 +327,9 @@ def main(argv: list[str] | None = None) -> int:
         sys.path.insert(0, str(root))
     parser = build_parser()
     args = parser.parse_args(argv)
+    os.umask(0o077)
+    load_secrets()
+    configure_logging()
     return args.func(args)
 
 

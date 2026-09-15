@@ -1,0 +1,93 @@
+# Public-source probe catalog.
+# bootstrap_county.py hits each URL and classifies it as
+# bulk_dataset > api > portal_scrape before any adapter is written.
+
+[[probe]]
+key = "harris"
+fips = "48201"
+name = "Harris"
+state = "TX"
+
+[[probe.clerk]]
+label = "district_clerk_bulk"
+url = "https://www.hcdistrictclerk.com/common/e-services/PublicDatasets.aspx"
+
+[[probe.tax]]
+label = "hcad_parcels"
+url = "https://www.gis.hctx.net/arcgis/rest/services/HCAD/Parcels/MapServer/0?f=json"
+
+[[probe]]
+key = "dallas"
+fips = "48113"
+name = "Dallas"
+state = "TX"
+
+[[probe.clerk]]
+label = "odyssey_smart_search"
+url = "https://courtsportal.dallascounty.org/DALLASPROD/Home/Dashboard/29"
+
+[[probe.tax]]
+label = "dcad_owner_search"
+url = "https://www.dallascad.org/searchowner.aspx"
+
+[[probe]]
+key = "tarrant"
+fips = "48439"
+name = "Tarrant"
+state = "TX"
+
+[[probe.clerk]]
+label = "odyssey_public_access"
+url = "https://odyssey.tarrantcounty.com/PublicAccess/default.aspx"
+
+[[probe.clerk]]
+label = "civil_tax_info"
+url = "https://www.tarrantcountytx.gov/en/district-clerk/Divisions/Civil_Tax.html"
+
+[[probe.tax]]
+label = "tad_parcels_featureserver"
+url = "https://mapit.tarrantcounty.com/arcgis/rest/services/Dynamic/TADParcels/FeatureServer/0?f=json"
+
+[[probe.tax]]
+label = "tad_property_mapserver"
+url = "https://mapit.tarrantcounty.com/arcgis/rest/services/Tax/TCProperty/MapServer/0?f=json"
+
+[[probe.tax]]
+label = "tad_gis_downloads"
+url = "https://www.tad.org/resources/data-downloads"
+
+[[probe]]
+key = "bexar"
+fips = "48029"
+name = "Bexar"
+state = "TX"
+
+[[probe.clerk]]
+label = "tyler_justice_portal"
+url = "https://portal-txbexar.tylertech.cloud/Portal/"
+
+[[probe.clerk]]
+label = "legacy_litsearch"
+url = "https://apps.bexar.org/LitSearch/"
+
+[[probe.tax]]
+label = "bcad_parcels"
+url = "https://maps.bexar.org/arcgis/rest/services/Parcels/MapServer/0?f=json"
+
+[[probe]]
+key = "maricopa"
+fips = "04013"
+name = "Maricopa"
+state = "AZ"
+
+[[probe.clerk]]
+label = "superior_court_civil_search"
+url = "https://www.superiorcourt.maricopa.gov/docket/civilcourtcases/casesearch.asp"
+
+[[probe.tax]]
+label = "assessor_search_api"
+url = "https://mcassessor.maricopa.gov/search/property/?q=SMITH"
+
+[[probe.tax]]
+label = "assessor_parcels_mapserver"
+url = "https://gis.mcassessor.maricopa.gov/arcgis/rest/services/Parcels/MapServer/0?f=json"

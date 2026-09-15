@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import Any
 
 from leads.models import ContactRecord
+from leads.http import SourceChangedError, SourceSession
 
 
 class BatchDataSkipTraceProvider:
@@ -13,13 +14,14 @@ class BatchDataSkipTraceProvider:
     name = "batchdata"
     API_URL = "https://api.batchdata.com/api/v3/property/skip-trace"
 
-    def __init__(self, api_key: str | None = None) -> None:
+    def __init__(self, api_key: str | None = None, session=None) -> None:
         self.api_key = api_key or os.environ.get("BATCHDATA_API_KEY", "")
         if not self.api_key:
             raise RuntimeError(
                 "BATCHDATA_API_KEY not set. Copy config/secrets.env.example to "
                 "config/secrets.env and add your key."
             )
+        self.session = session or SourceSession()
 
     def _build_request(
         self,
@@ -150,20 +152,25 @@ class BatchDataSkipTraceProvider:
         state: str,
         apn: str = "",
     ) -> list[ContactRecord]:
-        import requests
-
         payload = self._build_request(name, address, city, state, apn=apn)
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
             "Accept": "application/json",
         }
-        resp = requests.post(self.API_URL, json=payload, headers=headers, timeout=60)
+        resp = self.session.post(self.API_URL, json=payload, headers=headers, timeout=60)
         resp.raise_for_status()
         data = resp.json()
+        if not isinstance(data, dict) or not isinstance(data.get("results"), (dict, list)) or data.get("error"):
+            raise SourceChangedError("BatchData error or missing results")
+        status = data.get("status")
+        if isinstance(status, dict) and str(status.get("code", "200")) != "200":
+            raise SourceChangedError("BatchData reported an unsuccessful result")
         contacts: list[ContactRecord] = []
         now = datetime.utcnow()
         for person in self._extract_persons(data)[:3]:
+            if not self._best_phone(person) and not self._best_email(person):
+                continue
             contacts.append(
                 ContactRecord(
                     id=None,

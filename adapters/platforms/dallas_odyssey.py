@@ -10,6 +10,7 @@ from typing import Any
 import requests
 
 from leads.models import CaseRecord
+from leads.http import SourceChangedError, SourceSession
 from leads.utils import case_dedupe_key, normalize_defendant, plaintiff_is_tax_suit
 
 USER_AGENT = (
@@ -278,7 +279,7 @@ class DallasOdysseyClient:
     ) -> None:
         self.portal_base = portal_base.rstrip("/")
         self.site_key = site_key
-        self.session = session or requests.Session()
+        self.session = session or SourceSession()
         self.session.headers.setdefault("User-Agent", USER_AGENT)
 
     @property
@@ -352,6 +353,7 @@ class DallasOdysseyClient:
             timeout=120,
             allow_redirects=True,
         )
+        resp.raise_for_status()
         return resp.text, resp.status_code
 
     def search_tax_suits(
@@ -372,7 +374,10 @@ class DallasOdysseyClient:
             )
             if status >= 400:
                 raise RuntimeError(f"Dallas Odyssey search HTTP {status} for query={q!r}")
-            for row in parse_smart_search_results(html):
+            rows = parse_smart_search_results(html)
+            if not rows and not re.search(r"no (?:cases|results|records) (?:were )?found", _cell_text(html), re.I):
+                raise SourceChangedError("Odyssey returned no recognized results or empty-result message")
+            for row in rows:
                 case = row_to_case_record(
                     row,
                     county_fips=county_fips,

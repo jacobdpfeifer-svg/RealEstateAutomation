@@ -24,6 +24,6 @@ def load_secrets(path: Path | None = None) -> dict[str, str]:
         if not key:
             continue
         loaded[key] = value
-        if key not in os.environ or os.environ.get(key, "") == "":
+        if key not in os.environ:
             os.environ[key] = value
     return loaded

@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta
+import os
+from datetime import date, datetime
 
-from adapters.registry import CountyConfig, get_clerk_adapter, get_skip_provider_for_county, get_tax_adapter
+from adapters.registry import get_clerk_adapter, get_skip_provider_for_county, get_tax_adapter
 from leads import db
 from leads.models import PipelineStatus
+from leads.http import SourceBlockedError, safe_error
 from leads.utils import is_entity_defendant, property_dedupe_key
 
 
@@ -15,6 +17,9 @@ class Pipeline:
     def __init__(self, conn, config_path=None) -> None:
         self.conn = conn
         self.config_path = config_path
+        self.max_attempts = int(os.environ.get("LEADS_MAX_ENRICH_ATTEMPTS", "3"))
+        if self.max_attempts < 1:
+            raise ValueError("LEADS_MAX_ENRICH_ATTEMPTS must be positive")
 
     def ingest_county(self, county_key: str, since: date, *, dry_run: bool = False) -> dict:
         clerk = get_clerk_adapter(county_key, self.config_path)
@@ -23,6 +28,9 @@ class Pipeline:
         if dry_run:
             return {"county": county_key, "found": len(cases), "inserted": 0, "dry_run": True}
         for case in cases:
+            existing = self.conn.execute(
+                "SELECT id FROM case_record WHERE dedupe_key = ?", (case.dedupe_key,)
+            ).fetchone()
             case_id = db.upsert_case(
                 self.conn,
                 {
@@ -40,19 +48,17 @@ class Pipeline:
                 },
             )
             db.ensure_lead(self.conn, case_id, PipelineStatus.NEW.value)
-            db.log_fetch(
-                self.conn,
-                entity_type="case_record",
-                entity_id=case_id,
-                url=case.source_url,
-                http_status=200,
-            )
-            inserted += 1
+            inserted += int(existing is None)
+        for log in getattr(clerk, "fetch_logs", []):
+            db.log_fetch(self.conn, entity_type="clerk", entity_id=None, url=log["url"],
+                         http_status=log["status"], artifact_path=log["artifact"])
+        self.conn.commit()  # Ingest survives interruption during external enrichment.
         return {"county": county_key, "found": len(cases), "inserted": inserted}
 
     def enrich_pending(self, county_key: str | None = None) -> dict:
         query = """
-            SELECT l.id AS lead_id, l.case_id, c.defendant_normalized, c.defendant_raw, c.county_fips
+            SELECT l.id AS lead_id, l.case_id, l.enrichment_attempts,
+                   c.defendant_normalized, c.defendant_raw, c.county_fips
             FROM lead l
             JOIN case_record c ON c.id = l.case_id
             WHERE l.pipeline_status IN ('new', 'error')
@@ -67,7 +73,11 @@ class Pipeline:
         rows = self.conn.execute(query, params).fetchall()
         enriched = 0
         needs_review = 0
+        errors = 0
+        dead_letter = 0
+        processed = 0
         for row in rows:
+            self.conn.execute("SAVEPOINT enrich_lead")
             try:
                 result = self._enrich_case(row["case_id"], row["defendant_normalized"], row["defendant_raw"])
                 if result == PipelineStatus.ENRICHED.value:
@@ -75,8 +85,26 @@ class Pipeline:
                 else:
                     needs_review += 1
             except Exception as exc:
-                db.update_lead_status(self.conn, row["lead_id"], PipelineStatus.ERROR.value, str(exc))
-        return {"processed": len(rows), "enriched": enriched, "needs_review": needs_review}
+                self.conn.execute("ROLLBACK TO SAVEPOINT enrich_lead")
+                attempts = row["enrichment_attempts"] + 1
+                status = "dead_letter" if attempts >= self.max_attempts else PipelineStatus.ERROR.value
+                db.update_lead_status(self.conn, row["lead_id"], status, "enrichment: " + safe_error(exc))
+                self.conn.execute("UPDATE lead SET enrichment_attempts = ? WHERE id = ?", (attempts, row["lead_id"]))
+                db.log_fetch(self.conn, entity_type="lead", entity_id=row["lead_id"],
+                             url="", http_status=0, error="enrichment: " + safe_error(exc))
+                errors += 1
+                dead_letter += int(status == "dead_letter")
+                # Subsequent cases cannot succeed against a blocked host this run.
+                if isinstance(exc, SourceBlockedError):
+                    self.conn.execute("RELEASE SAVEPOINT enrich_lead")
+                    self.conn.commit()
+                    processed += 1
+                    break
+            self.conn.execute("RELEASE SAVEPOINT enrich_lead")
+            self.conn.commit()  # One lead is the durable resume boundary.
+            processed += 1
+        return {"processed": processed, "enriched": enriched, "needs_review": needs_review,
+                "errors": errors, "dead_letter": dead_letter}
 
     def _enrich_case(self, case_id: int, defendant_norm: str, defendant_raw: str) -> str:
         case_row = self.conn.execute(
@@ -93,8 +121,9 @@ class Pipeline:
         candidates = tax.search_by_owner(defendant_norm or defendant_raw)
         if not candidates:
             self.conn.execute(
-                "UPDATE lead SET pipeline_status = ?, updated_at = ? WHERE case_id = ?",
-                (PipelineStatus.NEEDS_REVIEW.value, datetime.utcnow().isoformat(), case_id),
+                "UPDATE lead SET pipeline_status = ?, review_note = ?, updated_at = ? WHERE case_id = ?",
+                (PipelineStatus.NEEDS_REVIEW.value, "No owner match; manual research required",
+                 datetime.utcnow().isoformat(), case_id),
             )
             return PipelineStatus.NEEDS_REVIEW.value
 
@@ -108,10 +137,13 @@ class Pipeline:
             """
             INSERT INTO property_record (
                 case_id, apn, situs_address, owner_of_record, tax_delinquent_amt,
-                years_delinquent, assessor_url, match_confidence, dedupe_key
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                years_delinquent, assessor_url, match_confidence, dedupe_key,
+                property_type, total_value
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(case_id, dedupe_key) DO UPDATE SET
-                match_confidence = excluded.match_confidence
+                match_confidence = excluded.match_confidence,
+                property_type = excluded.property_type,
+                total_value = excluded.total_value
             """,
             (
                 case_id,
@@ -123,6 +155,8 @@ class Pipeline:
                 best.assessor_url,
                 best.match_confidence,
                 prop_key,
+                best.property_type,
+                best.total_value,
             ),
         )
         prop_id = self.conn.execute(
@@ -132,8 +166,7 @@ class Pipeline:
 
         parts = best.situs_address.rsplit(",", 2)
         city = parts[-2].strip() if len(parts) >= 2 else ""
-        state_zip = parts[-1].strip() if parts else "TX"
-        state = state_zip.split()[0] if state_zip else "TX"
+        state = cfg.state
         street = parts[0].strip() if parts else best.situs_address
 
         contacts = skip.trace(
@@ -147,11 +180,12 @@ class Pipeline:
         if contacts:
             c = contacts[0]
             c.property_id = prop_id
-            self.conn.execute(
+            cur = self.conn.execute(
                 """
                 INSERT INTO contact_record (
                     property_id, name, phone, email, address, provider, confidence, retrieved_at, manual_paste
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)
+                RETURNING id
                 """,
                 (
                     prop_id,
@@ -164,18 +198,29 @@ class Pipeline:
                     c.retrieved_at.isoformat(),
                 ),
             )
-            contact_id = self.conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+            contact_id = cur.fetchone()["id"]
 
         status = PipelineStatus.ENRICHED.value
-        if multi_hit or entity or low_conf:
+        if multi_hit or entity or low_conf or not contacts:
             status = PipelineStatus.NEEDS_REVIEW.value
+
+        reasons = []
+        if multi_hit:
+            reasons.append("Multiple owner matches")
+        if entity:
+            reasons.append("Entity defendant")
+        if low_conf:
+            reasons.append("Low owner-match confidence")
+        if not contacts:
+            reasons.append("No contact; manual skip trace required")
 
         self.conn.execute(
             """
-            UPDATE lead SET property_id = ?, contact_id = ?, pipeline_status = ?, updated_at = ?
+            UPDATE lead SET property_id = ?, contact_id = ?, pipeline_status = ?, updated_at = ?,
+                            review_note = ?
             WHERE case_id = ?
             """,
-            (prop_id, contact_id, status, datetime.utcnow().isoformat(), case_id),
+            (prop_id, contact_id, status, datetime.utcnow().isoformat(), "; ".join(reasons), case_id),
         )
         return status
 

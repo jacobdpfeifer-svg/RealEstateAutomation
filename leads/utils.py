@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import re
-from typing import Iterable
+from typing import Any, Iterable, Optional
 
 ENTITY_SUFFIXES = (
     " LLC", " INC", " CORP", " LTD", " LP", " LLP", " TRUST", " ESTATE",
@@ -51,3 +51,23 @@ def parse_since_days(since: str) -> int:
     if since.endswith("w"):
         return int(since[:-1]) * 7
     return int(since)
+
+
+def parse_money(raw: Any) -> Optional[float]:
+    """Parse '$280,620' / 280620 / '280620.00' into a float; empty/junk → None."""
+    if raw is None:
+        return None
+    if isinstance(raw, bool):
+        return None
+    if isinstance(raw, (int, float)):
+        return float(raw)
+    text = str(raw).strip()
+    if not text:
+        return None
+    cleaned = re.sub(r"[^0-9.\-]", "", text)
+    if cleaned in ("", ".", "-", "-."):
+        return None
+    try:
+        return float(cleaned)
+    except ValueError:
+        return None

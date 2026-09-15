@@ -108,8 +108,8 @@ class TestPipelineOffline(unittest.TestCase):
                 """
                 INSERT INTO property_record (
                     case_id, apn, situs_address, owner_of_record, assessor_url,
-                    match_confidence, dedupe_key
-                ) VALUES (?, '123', '100 Main, Houston, TX 77002', 'GARAGE HOUSTON LLC', '', 0.9, 'prop1')
+                    match_confidence, dedupe_key, property_type, total_value
+                ) VALUES (?, '123', '100 Main, Houston, TX 77002', 'GARAGE HOUSTON LLC', '', 0.9, 'prop1', 'RESIDENTIAL', 250000)
                 """,
                 (case_id,),
             )
@@ -130,6 +130,8 @@ class TestPipelineOffline(unittest.TestCase):
             csv_out = export_csv(conn, "approved")
             self.assertIn("202640765", csv_out)
             self.assertIn("7135550100", csv_out)
+            self.assertIn("RESIDENTIAL", csv_out)
+            self.assertIn("250000", csv_out)
 
 
 class TestCountyConfig(unittest.TestCase):
@@ -140,6 +142,9 @@ class TestCountyConfig(unittest.TestCase):
         self.assertEqual(harris.ingest, ["bulk_dataset"])
         dallas = counties["48113"]
         self.assertEqual(dallas.ingest, ["portal_scrape"])
+        self.assertFalse(counties["tarrant"].enabled)
+        self.assertFalse(counties["bexar"].enabled)
+        self.assertFalse(counties["maricopa"].enabled)
 
 
 if __name__ == "__main__":
