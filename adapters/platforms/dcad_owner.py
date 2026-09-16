@@ -6,16 +6,13 @@ from html import unescape
 from typing import Any
 from urllib.parse import quote
 import requests
-from rapidfuzz import fuzz
+from adapters.base import owner_match_score
 
 from leads.models import PropertyRecord
 from leads.http import SourceChangedError, SourceSession
 from leads.utils import parse_money
 
-USER_AGENT = (
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-)
+USER_AGENT = "re-tax-leads/0.1"
 DEFAULT_OWNER_URL = "https://www.dallascad.org/searchowner.aspx"
 
 
@@ -136,14 +133,6 @@ def parse_acct_detail(html: str, *, apn_fallback: str = "") -> dict[str, str]:
     }
 
 
-def _score(query: str, owner: str) -> float:
-    q = query.upper().strip()
-    o = owner.upper().strip()
-    if not q or not o:
-        return 0.0
-    return fuzz.token_set_ratio(q, o) / 100.0
-
-
 class DCADOwnerSearch:
     """Dallas Central Appraisal District ASP.NET owner / account lookup."""
 
@@ -233,7 +222,7 @@ class DCADOwnerSearch:
         apn = str(row.get("apn") or "")
         conf = match_confidence
         if query_name and owner:
-            conf = _score(query_name, owner)
+            conf = owner_match_score(query_name, owner)
         return PropertyRecord(
             id=None,
             case_id=case_id,

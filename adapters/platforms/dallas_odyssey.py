@@ -13,10 +13,7 @@ from leads.models import CaseRecord
 from leads.http import SourceChangedError, SourceSession
 from leads.utils import case_dedupe_key, normalize_defendant, plaintiff_is_tax_suit
 
-USER_AGENT = (
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-)
+USER_AGENT = "re-tax-leads/0.1"
 DEFAULT_PORTAL = "https://courtsportal.dallascounty.org/DALLASPROD"
 SMART_SEARCH_PATH = "/SmartSearch/SmartSearch/SmartSearch"
 DASHBOARD_PATH = "/Home/Dashboard/29"
@@ -247,7 +244,7 @@ def solve_recaptcha_v2(api_key: str, site_key: str, page_url: str) -> str:
     create.raise_for_status()
     created = create.json()
     if created.get("errorId"):
-        raise RuntimeError(f"Anti-Captcha createTask error: {created}")
+        raise RuntimeError("Anti-Captcha createTask failed")
     task_id = created["taskId"]
     for _ in range(40):
         import time
@@ -261,7 +258,7 @@ def solve_recaptcha_v2(api_key: str, site_key: str, page_url: str) -> str:
         poll.raise_for_status()
         body = poll.json()
         if body.get("errorId"):
-            raise RuntimeError(f"Anti-Captcha getTaskResult error: {body}")
+            raise RuntimeError("Anti-Captcha getTaskResult failed")
         if body.get("status") == "ready":
             return body["solution"]["gRecaptchaResponse"]
     raise TimeoutError("Anti-Captcha timed out waiting for reCAPTCHA solution")

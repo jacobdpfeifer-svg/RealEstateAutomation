@@ -10,6 +10,8 @@ from typing import Any
 
 import requests
 
+from leads.http import SourceBlockedError, SourceSession, safe_error
+
 if sys.version_info >= (3, 11):
     import tomllib
 else:
@@ -79,7 +81,7 @@ def classify_response(url: str, status: int, content_type: str, text: str) -> di
                 return {"method": "api", "subtype": "json_search"}
         return {"method": "api", "subtype": "json"}
 
-    if "downloaddoc" in lowered or "publicdatasets" in lowered or "casesummary" in lowered:
+    if "downloaddoc" in lowered or "publicdatasets" in lowered or "casesummarymods" in lowered:
         return {"method": "bulk_dataset", "subtype": "clerk_bulk"}
     if any(tok in lowered for tok in ("shapefile", "geodatabase", "data downloads")) and (
         "download" in lowered or ".zip" in lowered or "gis" in url_l
@@ -114,18 +116,29 @@ def _guess_field(names: list[str], hints: tuple[str, ...]) -> str:
     return ""
 
 
-def _best_method(hits: list[dict[str, Any]]) -> dict[str, Any] | None:
+def _best_method(hits: list[dict[str, Any]], *, role: str = "clerk") -> dict[str, Any] | None:
     viable = [h for h in hits if h.get("method") in METHOD_RANK and h.get("method") != "error"]
     if not viable:
         return hits[0] if hits else None
-    return min(viable, key=lambda h: METHOD_RANK.get(h.get("method") or "unknown", 9))
+    return min(viable, key=lambda h: _hit_rank(h, role=role))
+
+
+def _hit_rank(hit: dict[str, Any], *, role: str) -> float:
+    method = hit.get("method") or "unknown"
+    subtype = hit.get("subtype") or ""
+    rank = float(METHOD_RANK.get(method, 9))
+    # Parcel GIS zips are bulk, but they are worse than a queryable owner API
+    # for tax lookup (shapefile download ≠ live owner search).
+    if role == "tax" and method == "bulk_dataset" and subtype == "gis_download":
+        rank = METHOD_RANK["api"] + 0.5
+    return rank
 
 
 def fetch_target(session: requests.Session, url: str, timeout: int = 45) -> dict[str, Any]:
     try:
         resp = session.get(url, timeout=timeout, allow_redirects=True)
-    except requests.RequestException as exc:
-        return {"url": url, "method": "error", "subtype": "request_error", "error": str(exc)}
+    except (requests.RequestException, SourceBlockedError) as exc:
+        return {"url": url, "method": "error", "subtype": "request_error", "error": safe_error(exc)}
     classified = classify_response(
         str(resp.url),
         resp.status_code,
@@ -150,12 +163,12 @@ def fetch_target(session: requests.Session, url: str, timeout: int = 45) -> dict
 
 
 def probe_county(entry: dict[str, Any], session: requests.Session | None = None) -> dict[str, Any]:
-    sess = session or requests.Session()
+    sess = session or SourceSession()
     sess.headers.setdefault("User-Agent", USER_AGENT)
     clerk_hits = [fetch_target(sess, row["url"]) for row in (entry.get("clerk") or [])]
     tax_hits = [fetch_target(sess, row["url"]) for row in (entry.get("tax") or [])]
-    clerk_best = _best_method(clerk_hits) or {}
-    tax_best = _best_method(tax_hits) or {}
+    clerk_best = _best_method(clerk_hits, role="clerk") or {}
+    tax_best = _best_method(tax_hits, role="tax") or {}
     return {
         "county": entry.get("name"),
         "key": entry.get("key"),
@@ -189,7 +202,7 @@ def _tax_lookup_values(tax_best: dict[str, Any]) -> list[str]:
 def probe_keys(keys: list[str], catalog_path: Path | None = None) -> list[dict[str, Any]]:
     catalog = load_probe_catalog(catalog_path)
     wanted = {k.lower() for k in keys}
-    session = requests.Session()
+    session = SourceSession()
     session.headers["User-Agent"] = USER_AGENT
     out: list[dict[str, Any]] = []
     for entry in catalog:

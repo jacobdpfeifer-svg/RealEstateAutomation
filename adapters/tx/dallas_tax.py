@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from rapidfuzz import fuzz
+from adapters.base import owner_match_score
 
 from adapters.platforms.dcad_owner import DCADConfig, DCADOwnerSearch
 from adapters.registry import CountyConfig
@@ -24,22 +24,14 @@ class DallasTaxAdapter:
                 ),
             )
         )
-        self._match_threshold = 0.85
-
-    def _score(self, query: str, owner: str) -> float:
-        q = query.upper().strip()
-        o = owner.upper().strip()
-        if not q or not o:
-            return 0.0
-        return fuzz.token_set_ratio(q, o) / 100.0
 
     def search_by_owner(self, name: str, *, case_id: int = 0) -> list[PropertyRecord]:
         rows, _url, _status = self.client.search_by_owner(name)
         props: list[PropertyRecord] = []
         for row in rows:
             owner = str(row.get("owner_of_record") or "")
-            score = self._score(name, owner)
-            if score < 0.5:
+            score = owner_match_score(name, owner)
+            if score < self.client.config.match_threshold:
                 continue
             props.append(
                 self.client.row_to_property(

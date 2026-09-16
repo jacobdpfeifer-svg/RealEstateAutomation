@@ -94,6 +94,7 @@ class SourceSession(requests.Session):
                 self._blocked_hosts.add(urlsplit(url).netloc)
                 raise
             finally:
-                if response is not None:
+                # Mock/fixture Response objects often have raw=None; close() would throw.
+                if response is not None and getattr(response, "raw", None) is not None:
                     response.close()
             time.sleep(delay)

@@ -9,6 +9,7 @@ from typing import Any
 
 from adapters.registry import get_skip_provider_for_county
 from leads import db
+from leads.http import safe_error
 from leads.pipeline import Pipeline
 from leads.secrets import load_secrets
 from leads.utils import parse_since_days
@@ -40,7 +41,7 @@ def preflight() -> dict[str, Any]:
             "DALLAS_RECAPTCHA_TOKEN": "present" if _present("DALLAS_RECAPTCHA_TOKEN") else "missing",
         },
         "skip_trace_provider": skip.name,
-        "dallas_clerk_live": _present("ANTICAPTCHA_API_KEY") or _present("DALLAS_RECAPTCHA_TOKEN"),
+        "dallas_clerk_live": os.environ.get("DALLAS_CLERK_LIVE_ENABLED", "") == "1",
         "dallas_fixtures": {
             "dir": str(fixture_dir),
             "html_files": len(html_files),
@@ -53,7 +54,7 @@ def _run_county(pipe: Pipeline, county: str, since: date, *, dry_run: bool) -> d
     try:
         return {"ok": True, "result": pipe.run_all(county, since, dry_run=dry_run)}
     except Exception as exc:
-        return {"ok": False, "error": f"{type(exc).__name__}: {exc}"}
+        return {"ok": False, "error": safe_error(exc)}
 
 
 def run_phase1_validation(
@@ -98,8 +99,12 @@ def run_phase1_validation(
         )
     if not checks["dallas_clerk_live"] and checks["dallas_fixtures"]["html_files"] == 0:
         blockers.append(
-            "Dallas clerk blocked: set ANTICAPTCHA_API_KEY or drop Odyssey HTML under artifacts/raw/dallas/clerk/."
+            "Dallas clerk requires saved Odyssey HTML or explicitly enabled, permitted live access."
         )
     report["blockers"] = blockers
-    report["ready_for_daily"] = not blockers and checks["secrets"]["BATCHDATA_API_KEY"] == "present"
+    report["ready_for_daily"] = (
+        not skip_enrich and not blockers
+        and all(run.get("ok") and not run.get("result", {}).get("enrich", {}).get("errors", 0)
+                for run in report["runs"].values())
+    )
     return report

@@ -30,9 +30,9 @@ def _parse_viewstate(html: str) -> dict[str, str]:
     }
 
 
-def download_bulk_file(session: requests.Session, file_path: str) -> tuple[str, int, str]:
+def download_bulk_file(session: requests.Session, file_path: str, bulk_page: str = BULK_PAGE) -> tuple[str, int, str]:
     """Download a Harris District Clerk bulk dataset via form POST."""
-    resp = session.get(BULK_PAGE, timeout=60)
+    resp = session.get(bulk_page, timeout=60)
     resp.raise_for_status()
     fields = _parse_viewstate(resp.text)
     if not fields["__VIEWSTATE"]:
@@ -42,9 +42,9 @@ def download_bulk_file(session: requests.Session, file_path: str) -> tuple[str, 
         "hiddenDownloadFile": file_path,
         "ctl00$ctl00$ctl00$ContentPlaceHolder1$ContentPlaceHolder2$ContentPlaceHolder2$buttonDownload": "Download",
     }
-    dl = session.post(BULK_PAGE, data=data, timeout=180)
+    dl = session.post(bulk_page, data=data, timeout=180)
     dl.raise_for_status()
-    return dl.text, dl.status_code, BULK_PAGE
+    return dl.text, dl.status_code, bulk_page
 
 
 def list_available_daily_summaries(html: str) -> list[str]:
@@ -134,21 +134,22 @@ def save_artifact(base: Path, county: str, name: str, content: str) -> str:
 class HarrisBulkDownloader:
     """Shared bulk download helper for Harris Clerk datasets."""
 
-    def __init__(self, artifact_dir: Path | None = None) -> None:
+    def __init__(self, artifact_dir: Path | None = None, bulk_page: str = BULK_PAGE) -> None:
         self.session = SourceSession()
         self.session.headers.update({"User-Agent": USER_AGENT})
+        self.bulk_page = bulk_page
         self.artifact_dir = artifact_dir or Path(__file__).resolve().parents[2] / "artifacts/raw"
 
     def fetch_summaries_since(
         self, since: date, plaintiff_terms: list[str], county_fips: str = "48201"
     ) -> tuple[list[CaseRecord], list[dict[str, Any]]]:
-        page = self.session.get(BULK_PAGE, timeout=60)
+        page = self.session.get(self.bulk_page, timeout=60)
         page.raise_for_status()
         files = pick_summary_files(since, page.text)
         cases: list[CaseRecord] = []
         logs: list[dict[str, Any]] = []
         for fp in files:
-            text, status, url = download_bulk_file(self.session, fp)
+            text, status, url = download_bulk_file(self.session, fp, self.bulk_page)
             artifact = ""
             if os.environ.get("LEADS_SAVE_RAW", "") == "1":
                 artifact = save_artifact(self.artifact_dir, "harris", fp.replace("\\", "_"), text)

@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from adapters.registry import load_counties
-from leads.probe import catalog_keys, classify_response, load_probe_catalog
+from leads.probe import _best_method, catalog_keys, classify_response, load_probe_catalog
 from leads.utils import parse_money
 
 
@@ -36,6 +36,11 @@ class TestClassifyResponse(unittest.TestCase):
         hit = classify_response("https://courtsportal.example/DALLASPROD", 200, "text/html", html)
         self.assertEqual(hit["method"], "portal_scrape")
         self.assertTrue(hit.get("recaptcha_required"))
+
+    def test_case_summary_label_is_not_bulk(self) -> None:
+        html = "<html>Tyler Odyssey Portal. View Case Summary for party name search.</html>"
+        hit = classify_response("https://portal-txbexar.tylertech.cloud/Portal/", 200, "text/html", html)
+        self.assertNotEqual(hit["method"], "bulk_dataset")
 
     def test_bulk_clerk_page(self) -> None:
         html = "PublicDatasets DownloadDoc('Civil\\\\CaseSummaryMods_Daily-2026-09-01.txt')"
@@ -65,6 +70,14 @@ class TestProbeCatalog(unittest.TestCase):
         self.assertTrue(tarrant.get("clerk"))
         self.assertTrue(tarrant.get("tax"))
 
+    def test_tax_prefers_arcgis_over_gis_zip(self) -> None:
+        hits = [
+            {"method": "bulk_dataset", "subtype": "gis_download", "url": "https://tad.example/downloads"},
+            {"method": "api", "subtype": "arcgis_rest", "url": "https://mapit.example/FeatureServer/0"},
+        ]
+        best = _best_method(hits, role="tax")
+        self.assertEqual(best["subtype"], "arcgis_rest")
+
     def test_probe_only_counties_are_disabled(self) -> None:
         counties = load_counties(ROOT / "config" / "counties.toml")
         for key in ("tarrant", "bexar", "maricopa"):
@@ -72,6 +85,9 @@ class TestProbeCatalog(unittest.TestCase):
             self.assertFalse(cfg.enabled)
             self.assertEqual(cfg.clerk_adapter, "")
             self.assertEqual(cfg.tax_adapter, "")
+        self.assertEqual(counties["tarrant"].tax_lookup, ["arcgis_rest"])
+        self.assertEqual(counties["bexar"].tax_lookup, ["arcgis_rest"])
+        self.assertEqual(counties["maricopa"].tax_lookup, ["arcgis_rest"])
 
 
 class TestParseMoney(unittest.TestCase):

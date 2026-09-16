@@ -11,7 +11,7 @@ if sys.version_info >= (3, 11):
 else:
     import tomli as tomllib
 
-from adapters.base import ClerkAdapter, TaxAdapter
+from adapters.base import ClerkAdapter, TaxAdapter, SkipTraceProvider
 from providers.skip_trace.base import get_skip_trace_provider
 
 
@@ -108,7 +108,7 @@ def list_enabled_counties(config_path: Path | None = None) -> list[CountyConfig]
     return sorted(out, key=lambda c: c.name)
 
 
-def get_skip_provider_for_county(county_key: str, config_path: Path | None = None):
+def get_skip_provider_for_county(county_key: str, config_path: Path | None = None) -> SkipTraceProvider:
     counties = load_counties(config_path)
     cfg = counties[county_key.lower()]
     provider_name = cfg.skip_trace[0] if cfg.skip_trace else "stub"

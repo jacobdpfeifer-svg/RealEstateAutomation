@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+from adapters.base import SkipTraceProvider
+
 from providers.skip_trace.stub import StubSkipTraceProvider
 
 
-def get_skip_trace_provider(name: str = "stub"):
+def get_skip_trace_provider(name: str = "stub") -> SkipTraceProvider:
     """
     Resolve a skip-trace provider by name.
 

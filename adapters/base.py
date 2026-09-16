@@ -3,6 +3,8 @@ from __future__ import annotations
 from datetime import date
 from typing import Protocol, runtime_checkable
 
+from rapidfuzz import fuzz
+
 from leads.models import CaseRecord, ContactRecord, PropertyRecord
 
 
@@ -37,3 +39,9 @@ class SkipTraceProvider(Protocol):
         state: str,
         apn: str = "",
     ) -> list[ContactRecord]: ...
+
+
+def owner_match_score(query: str, owner: str) -> float:
+    """Shared owner-name normalization/scoring for county tax adapters."""
+    query, owner = query.upper().strip(), owner.upper().strip()
+    return fuzz.token_set_ratio(query, owner) / 100.0 if query and owner else 0.0

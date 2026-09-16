@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date, timedelta
 from pathlib import Path
 
-from adapters.platforms.harris_bulk_civil import HarrisBulkDownloader
+from adapters.platforms.harris_bulk_civil import BULK_PAGE, HarrisBulkDownloader
 from adapters.registry import CountyConfig
 from leads.models import CaseRecord
 
@@ -14,7 +14,7 @@ class HarrisClerkAdapter:
 
     def __init__(self, cfg: CountyConfig, artifact_dir: Path | None = None) -> None:
         self.cfg = cfg
-        self.downloader = HarrisBulkDownloader(artifact_dir=artifact_dir)
+        self.downloader = HarrisBulkDownloader(artifact_dir=artifact_dir, bulk_page=cfg.raw.get("clerk_bulk_url", BULK_PAGE))
         self._cache: list[CaseRecord] = []
         self.fetch_logs: list[dict] = []
 

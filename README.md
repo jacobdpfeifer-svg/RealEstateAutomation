@@ -12,11 +12,11 @@ Marketplace roadmap (buyer pipeline, matching, outreach): see [`docs/PROJECT_PLA
 
 ```bash
 cd re-tax-leads
-python3 -m venv .venv
+python3.12 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 cp config/secrets.env.example config/secrets.env
-# Add BATCHDATA_API_KEY (and optionally ANTICAPTCHA_API_KEY for live Dallas clerk)
+# Add BATCHDATA_API_KEY. Dallas clerk defaults to saved HTML.
 ```
 
 ### Database
@@ -44,7 +44,7 @@ python3 -m leads validate -o artifacts/phase1_validation.json
 # Ingest + enrich Harris tax suits (last 7 days)
 python3 -m leads run --county harris --since 7d
 
-# Dallas: DCAD tax lookup is live; clerk ingest uses Odyssey fixtures and/or captcha
+# Dallas: DCAD tax lookup is live; clerk ingest defaults to saved Odyssey HTML
 python3 -m leads run --county dallas --since 30d
 
 # Dry run (no DB writes)
@@ -73,7 +73,7 @@ python3 -m leads export --status approved -o exports/approved.csv
 
 ## Dallas clerk fixtures
 
-Anonymous Odyssey search requires reCAPTCHA. Until `ANTICAPTCHA_API_KEY` is set:
+Saved HTML is the default clerk input. For permitted manual portal use:
 
 1. Open Smart Search on the Dallas Courts Portal
 2. Search business name `DALLAS COUNTY TAX*` with a file-date range
@@ -86,7 +86,9 @@ Anonymous Odyssey search requires reCAPTCHA. Until `ANTICAPTCHA_API_KEY` is set:
 python3 -m leads validate
 ```
 
-Uses Dallas Odyssey HTML under `artifacts/raw/dallas/clerk/` when `ANTICAPTCHA_API_KEY` is unset. Harris is dry-run against the live bulk dataset. Skip-trace uses BatchData if `BATCHDATA_API_KEY` is set, otherwise the stub. Results go to `artifacts/phase1_validation.db` (not `leads.db`).
+Uses Dallas Odyssey HTML under `artifacts/raw/dallas/clerk/` by default. Harris is dry-run against the live bulk dataset. Skip-trace uses BatchData if `BATCHDATA_API_KEY` is set, otherwise the stub. Results go to `artifacts/phase1_validation.db` (not `leads.db`).
+
+Last run (2026-09-15, no API keys): Harris live bulk dry-run found 126 tax suits in 60d; Dallas fixture ingest wrote 3 cases; DCAD enrich populated `property_type` / `total_value` and queued all 3 for review (stub skip-trace, no contacts). Set `BATCHDATA_API_KEY` before treating this as daily-ready.
 
 ## Daily job
 
@@ -100,3 +102,43 @@ chmod +x scripts/run_daily.sh
 ```bash
 python3 -m unittest discover -s tests -v
 ```
+
+## Reliability and operations
+
+Research, rationale, and deferred decisions: [2026 reliability review](docs/RELIABILITY_REVIEW.md).
+
+- Use Python 3.12+ with OpenSSL for daily runs. The Python 3.9 pins preserve existing
+  offline test compatibility; system Python on this Mac uses unsupported LibreSSL.
+- `run` / `pipeline enrich-pending` return exit status 1 on processing failures.
+  `run` commits ingest and each completed lead so the next invocation can resume.
+  Local pipeline commands share a nonblocking file lock; the kernel releases it
+  after a crash. This is not a distributed PostgreSQL lock.
+- Errors retry on later runs, up to `LEADS_MAX_ENRICH_ATTEMPTS` (default 3), then
+  enter `dead_letter`. No owner/contact results go to human review with a reason.
+- `--dry-run` uses an in-memory DB and does not open the target DB. It still fetches
+  source data; explicitly enabled raw capture can still write files.
+- JSON operational events go to stderr (time, county, stage, run ID for county
+  events, counts, duration, safe error type). Stdout keeps command results.
+  Configure cron's exit/absence alerts and rotate redirected logs on the host.
+- GET retries honor `Retry-After`; 401/403 and exhausted 429 stop further requests
+  to that host for the process. POST requests are never replayed by the HTTP layer.
+  A later enrichment retry can still repeat a paid call after an ambiguous timeout;
+  check vendor billing before explicitly requeueing it.
+
+```bash
+python3 -m leads review list --status dead_letter
+python3 -m leads review retry 123 --note "source repaired; checked provider billing"
+python3 -m leads pipeline enrich-pending --county harris
+```
+
+Dallas County offers an [official civil index subscription](https://www.dallascounty.org/dcSubServicePaymentus/),
+and DCAD publishes [bulk appraisal files](https://www.dallascad.org/DataProducts.aspx).
+These are the preferred next integrations. Legacy portal automation requires
+`DALLAS_CLERK_LIVE_ENABLED=1` plus a token/provider key and confirmation that the
+county permits the workflow. A working CAPTCHA service is not that confirmation.
+
+Raw Harris capture is off unless `LEADS_SAVE_RAW=1`. New raw captures and CSV file
+exports use owner-only permissions. Existing data is not deleted or moved.
+`leads.db`, SQLite sidecars, raw artifacts, validation databases, and exports are
+Git-ignored; Git does not control iCloud sync, backups, or previously committed
+fixture data. Choose a retention policy and storage location before sharing data.

@@ -31,7 +31,7 @@ def main() -> int:
         default="all",
         help="County key, 'all' (catalog), or 'next' (Tarrant/Bexar/Maricopa)",
     )
-    parser.add_argument("--output", default=None, help="Write JSON report to file")
+    parser.add_argument("--output", "-o", default=None, help="Write JSON report to file")
     args = parser.parse_args()
 
     county = args.county.lower().strip()

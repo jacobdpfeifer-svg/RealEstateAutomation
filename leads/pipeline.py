@@ -7,6 +7,7 @@ from adapters.registry import get_clerk_adapter, get_skip_provider_for_county, g
 from leads import db
 from leads.models import PipelineStatus
 from leads.http import SourceBlockedError, safe_error
+from leads.observability import event
 from leads.utils import is_entity_defendant, property_dedupe_key
 
 
@@ -77,6 +78,7 @@ class Pipeline:
         dead_letter = 0
         processed = 0
         for row in rows:
+            self._stage = "owner_match"
             self.conn.execute("SAVEPOINT enrich_lead")
             try:
                 result = self._enrich_case(row["case_id"], row["defendant_normalized"], row["defendant_raw"])
@@ -88,10 +90,13 @@ class Pipeline:
                 self.conn.execute("ROLLBACK TO SAVEPOINT enrich_lead")
                 attempts = row["enrichment_attempts"] + 1
                 status = "dead_letter" if attempts >= self.max_attempts else PipelineStatus.ERROR.value
-                db.update_lead_status(self.conn, row["lead_id"], status, "enrichment: " + safe_error(exc))
+                error = self._stage + ": " + safe_error(exc)
+                db.update_lead_status(self.conn, row["lead_id"], status, error)
                 self.conn.execute("UPDATE lead SET enrichment_attempts = ? WHERE id = ?", (attempts, row["lead_id"]))
                 db.log_fetch(self.conn, entity_type="lead", entity_id=row["lead_id"],
-                             url="", http_status=0, error="enrichment: " + safe_error(exc))
+                             url="", http_status=0, error=error)
+                event("lead_failed", lead_id=row["lead_id"], county_fips=row["county_fips"],
+                      stage=self._stage, error=safe_error(exc), attempts=attempts, status=status)
                 errors += 1
                 dead_letter += int(status == "dead_letter")
                 # Subsequent cases cannot succeed against a blocked host this run.
@@ -169,6 +174,7 @@ class Pipeline:
         state = cfg.state
         street = parts[0].strip() if parts else best.situs_address
 
+        self._stage = "skip_trace"
         contacts = skip.trace(
             name=best.owner_of_record or defendant_raw,
             address=street,
@@ -177,6 +183,7 @@ class Pipeline:
             apn=best.apn,
         )
         contact_id = None
+        self._stage = "persist_contact"
         if contacts:
             c = contacts[0]
             c.property_id = prop_id
