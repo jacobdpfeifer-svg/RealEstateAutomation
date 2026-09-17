@@ -1,0 +1,28 @@
+{
+  "checked_at": "2026-09-17",
+  "key_status": "missing_in_shell_and_actual_secrets_file",
+  "effective_provider": "stub",
+  "live_paid_validation": "not_run",
+  "reason": "missing key; user prohibits spend",
+  "production_enrichment_calls": 0,
+  "scratch_max_enrich": 0,
+  "validation_exit_code": 1,
+  "ready_for_daily": false,
+  "validation_runs": {
+    "harris_dry_run": {
+      "ok": false,
+      "error": "ConnectionError"
+    },
+    "dallas": {
+      "ok": false,
+      "error": "RuntimeError"
+    }
+  },
+  "authentic_dallas_capture_count": 0,
+  "regression_tests": 3,
+  "full_suite_tests_passed": 101,
+  "schema_status": "field_level_v3_spec_unverified",
+  "real_contact_verification": "not_performed",
+  "isolated_head_plus_task_changes_tests_passed": 95,
+  "test_scope_note": "101 tests in the shared working tree; 95 in an isolated HEAD snapshot plus only this task code/test changes. Unrelated working-tree changes were not included in the commit."
+}

@@ -1,0 +1,2062 @@
+{
+  "schema_version": "buyer_research.v1",
+  "retrieved_at": "2026-09-17",
+  "geography": {
+    "48201": "Harris County, Texas",
+    "48113": "Dallas County, Texas"
+  },
+  "scope": "Public-source screening, not exhaustive deed census or verified purchasing demand.",
+  "confidence_definitions": {
+    "verified": "Exact claim independently corroborated; does not certify entire buyer profile.",
+    "probable": "Operating identity/relevance supported, but capacity, legal status or current county buy box incomplete.",
+    "unverified": "Company marketing alone, unresolved identity, or insufficient independent evidence."
+  },
+  "null_semantics": "Unknown or not verified; never zero/unlimited. County FIPS identify research targets, not confirmed county-wide coverage.",
+  "size_tier_semantics": "Research segmentation derived from business model/public description; not verified AUM, headcount or purchasing volume.",
+  "restrictions": [
+    "No outreach",
+    "No signup/application",
+    "No spending",
+    "No buyer code or automated import",
+    "No owner data in this dataset"
+  ],
+  "candidate_count": 21,
+  "confirmed_data_customers": 0,
+  "reviewer_approved_candidates": 0,
+  "candidates": [
+    {
+      "buyer_id": "big_state",
+      "buyer_name": "Big State Home Buyers",
+      "buyer_type": "regional_cash_buyer",
+      "size_tier": "regional_private",
+      "county_fips": [
+        "48201",
+        "48113"
+      ],
+      "county_fips_semantics": "target intersection for research; exact parcel eligibility unconfirmed",
+      "coverage": {
+        "value": "Houston and Dallas expressly advertised; exact county-wide coverage not established.",
+        "basis": "company_statement",
+        "source_urls": [
+          "https://www.bigstatehomebuyers.com/cash-offers/hou/sell-house-cash"
+        ]
+      },
+      "buy_box": {
+        "property_types": [
+          "houses"
+        ],
+        "condition_and_distress": "As-is; tax liens and other title problems explicitly discussed.",
+        "purchase_price_min": null,
+        "purchase_price_max": null,
+        "price_basis": "not_verified",
+        "target_zip_codes": null,
+        "purchase_cadence": null,
+        "cash_funding_verified": false,
+        "source_urls": [
+          "https://www.bigstatehomebuyers.com/cash-offers/hou/sell-house-cash"
+        ]
+      },
+      "contact_paths": [
+        {
+          "contact_type": "business_email",
+          "email": "hello@bigstatebuyers.com",
+          "url": "https://www.bigstatehomebuyers.com/cash-offers/hou/sell-house-cash",
+          "role": "public business intake; data procurement authority unverified",
+          "source_url": "https://www.bigstatehomebuyers.com/cash-offers/hou/sell-house-cash",
+          "contacted": false
+        }
+      ],
+      "sourcing_channels": [
+        {
+          "value": "Direct seller cash-offer intake.",
+          "basis": "company_statement",
+          "source_urls": [
+            "https://www.bigstatehomebuyers.com/cash-offers/hou/sell-house-cash"
+          ]
+        }
+      ],
+      "legitimacy_review": {
+        "identity_evidence": {
+          "value": "BBB profile/reviews for Big State Home Buyer, LLC show accreditation and A+; positive 2026 reviews and a negative 2024 service review.",
+          "basis": "independent_directory_and_company_comparison",
+          "source_urls": [
+            "https://www.bbb.org/us/tx/houston/profile/real-estate-investing/big-state-home-buyer-llc-0915-90015363/customer-reviews"
+          ]
+        },
+        "license_status": "not_verified; resolve exact contracting entity and role before relying on a brokerage claim",
+        "registry_check_url": "https://www.trec.texas.gov/license-search",
+        "reviews_status": {
+          "value": "Only identified public pages reviewed; absence of a cited complaint is not clearance.",
+          "basis": "research_scope_or_unresolved_check",
+          "source_urls": [
+            "https://www.bbb.org/us/tx/houston/profile/real-estate-investing/big-state-home-buyer-llc-0915-90015363/customer-reviews"
+          ]
+        }
+      },
+      "risk_flags": [
+        "Service complaint is an allegation, not a finding.",
+        "Principal purchase versus placement through another buyer should be confirmed."
+      ],
+      "confidence": "probable",
+      "confidence_scope": "candidate identity and relevance; not funds, title, license clearance, or willingness to buy data",
+      "data_product_fit": {
+        "status": "unverified",
+        "willingness_to_pay": null,
+        "assessment": "Initial discovery hypothesis: direct seller intake could benefit from fresh owner/condition research. Exact principal, incremental value and paid demand require human validation.",
+        "basis": "research_inference_from_cited_profile_evidence",
+        "source_urls": [
+          "https://www.bigstatehomebuyers.com/cash-offers/hou/sell-house-cash"
+        ]
+      },
+      "shortlist_for_personal_vetting": true,
+      "review_status": "pending",
+      "outreach_approved": false,
+      "retrieved_at": "2026-09-17",
+      "source_url": "https://www.bigstatehomebuyers.com/cash-offers/hou/sell-house-cash"
+    },
+    {
+      "buyer_id": "southern_hills",
+      "buyer_name": "Southern Hills Home Buyers",
+      "buyer_type": "local_cash_buyer",
+      "size_tier": "family_private",
+      "county_fips": [
+        "48113",
+        "48201"
+      ],
+      "county_fips_semantics": "target intersection for research; exact parcel eligibility unconfirmed",
+      "coverage": {
+        "value": "Dallas County expressly named; contact page also advertises Houston and surrounding areas.",
+        "basis": "company_statement",
+        "source_urls": [
+          "https://www.southernhillshomebuyers.com/",
+          "https://www.southernhillshomebuyers.com/contact-us/"
+        ]
+      },
+      "buy_box": {
+        "property_types": [
+          "houses",
+          "condos",
+          "duplexes",
+          "mobile homes"
+        ],
+        "condition_and_distress": "As-is, foreclosure, probate, tenants; acceptance of a specific tax-suit/title situation unconfirmed.",
+        "purchase_price_min": null,
+        "purchase_price_max": null,
+        "price_basis": "not_verified",
+        "target_zip_codes": null,
+        "purchase_cadence": null,
+        "cash_funding_verified": false,
+        "source_urls": [
+          "https://www.southernhillshomebuyers.com/",
+          "https://www.southernhillshomebuyers.com/contact-us/"
+        ]
+      },
+      "contact_paths": [
+        {
+          "contact_type": "public_web_path",
+          "email": null,
+          "url": "https://www.southernhillshomebuyers.com/contact-us/",
+          "role": "public business intake; data procurement authority unverified",
+          "source_url": "https://www.southernhillshomebuyers.com/contact-us/",
+          "contacted": false
+        }
+      ],
+      "sourcing_channels": [
+        {
+          "value": "Direct seller forms and foreclosure intake.",
+          "basis": "company_statement",
+          "source_urls": [
+            "https://www.southernhillshomebuyers.com/",
+            "https://www.southernhillshomebuyers.com/contact-us/"
+          ]
+        }
+      ],
+      "legitimacy_review": {
+        "identity_evidence": {
+          "value": "BBB identifies Southern Hills Property Group LLC; accredited A+. Website and BBB display different office addresses. Two complaints are listed, including a 2025 allegation of a late $10,000 price cut.",
+          "basis": "independent_directory_and_company_comparison",
+          "source_urls": [
+            "https://www.bbb.org/us/tx/plano/profile/real-estate-investing/southern-hills-home-buyers-0875-90908435",
+            "https://www.bbb.org/us/tx/plano/profile/real-estate-investing/southern-hills-home-buyers-0875-90908435/complaints"
+          ]
+        },
+        "license_status": "not_verified; resolve exact contracting entity and role before relying on a brokerage claim",
+        "registry_check_url": "https://www.trec.texas.gov/license-search",
+        "reviews_status": {
+          "value": "Only identified public pages reviewed; absence of a cited complaint is not clearance.",
+          "basis": "research_scope_or_unresolved_check",
+          "source_urls": [
+            "https://www.bbb.org/us/tx/plano/profile/real-estate-investing/southern-hills-home-buyers-0875-90908435",
+            "https://www.bbb.org/us/tx/plano/profile/real-estate-investing/southern-hills-home-buyers-0875-90908435/complaints"
+          ]
+        }
+      },
+      "risk_flags": [
+        "Reconcile entity/address discrepancy.",
+        "Review complaint and response before approval; not an adjudicated bait-and-switch finding."
+      ],
+      "confidence": "probable",
+      "confidence_scope": "candidate identity and relevance; not funds, title, license clearance, or willingness to buy data",
+      "data_product_fit": {
+        "status": "unverified",
+        "willingness_to_pay": null,
+        "assessment": "Initial discovery hypothesis: direct seller intake could benefit from fresh owner/condition research. Exact principal, incremental value and paid demand require human validation.",
+        "basis": "research_inference_from_cited_profile_evidence",
+        "source_urls": [
+          "https://www.southernhillshomebuyers.com/",
+          "https://www.southernhillshomebuyers.com/contact-us/"
+        ]
+      },
+      "shortlist_for_personal_vetting": true,
+      "review_status": "pending",
+      "outreach_approved": false,
+      "retrieved_at": "2026-09-17",
+      "source_url": "https://www.southernhillshomebuyers.com/",
+      "shortlist_condition": "Resolve complaints and identity discrepancy before any outreach approval."
+    },
+    {
+      "buyer_id": "four19",
+      "buyer_name": "Four 19 Properties",
+      "buyer_type": "local_cash_buyer",
+      "size_tier": "family_private",
+      "county_fips": [
+        "48113"
+      ],
+      "county_fips_semantics": "target intersection for research; exact parcel eligibility unconfirmed",
+      "coverage": {
+        "value": "Dallas County service areas explicitly listed.",
+        "basis": "company_statement",
+        "source_urls": [
+          "https://www.four19properties.com/our-locations/dallas/"
+        ]
+      },
+      "buy_box": {
+        "property_types": [
+          "houses"
+        ],
+        "condition_and_distress": "Tax liens, major repairs, tenants, probate and inherited houses.",
+        "purchase_price_min": null,
+        "purchase_price_max": null,
+        "price_basis": "not_verified",
+        "target_zip_codes": null,
+        "purchase_cadence": null,
+        "cash_funding_verified": false,
+        "source_urls": [
+          "https://www.four19properties.com/our-locations/dallas/"
+        ]
+      },
+      "contact_paths": [
+        {
+          "contact_type": "public_web_path",
+          "email": null,
+          "url": "https://www.four19properties.com/our-locations/dallas/",
+          "role": "public business intake; data procurement authority unverified",
+          "source_url": "https://www.four19properties.com/our-locations/dallas/",
+          "contacted": false
+        }
+      ],
+      "sourcing_channels": [
+        {
+          "value": "Direct seller intake.",
+          "basis": "company_statement",
+          "source_urls": [
+            "https://www.four19properties.com/our-locations/dallas/"
+          ]
+        }
+      ],
+      "legitimacy_review": {
+        "identity_evidence": {
+          "value": "BBB lists Four 19 Properties LLC and owners Neil/Shayla Dempsey; accredited A+; reviews include a reported completed purchase/resale. Entity start date differs from broader experience claim.",
+          "basis": "independent_directory_and_company_comparison",
+          "source_urls": [
+            "https://www.bbb.org/us/tx/granbury/profile/home-buyers/four-19-properties-llc-0825-1000190708",
+            "https://www.bbb.org/us/tx/granbury/profile/home-buyers/four-19-properties-llc-0825-1000190708/customer-reviews"
+          ]
+        },
+        "license_status": "not_verified; resolve exact contracting entity and role before relying on a brokerage claim",
+        "registry_check_url": "https://www.trec.texas.gov/license-search",
+        "reviews_status": {
+          "value": "Only identified public pages reviewed; absence of a cited complaint is not clearance.",
+          "basis": "research_scope_or_unresolved_check",
+          "source_urls": [
+            "https://www.bbb.org/us/tx/granbury/profile/home-buyers/four-19-properties-llc-0825-1000190708",
+            "https://www.bbb.org/us/tx/granbury/profile/home-buyers/four-19-properties-llc-0825-1000190708/customer-reviews"
+          ]
+        }
+      },
+      "risk_flags": [
+        "Owner experience is not the same as company age.",
+        "Verify closing entity and current cash capacity; no deed audit performed."
+      ],
+      "confidence": "probable",
+      "confidence_scope": "candidate identity and relevance; not funds, title, license clearance, or willingness to buy data",
+      "data_product_fit": {
+        "status": "unverified",
+        "willingness_to_pay": null,
+        "assessment": "Initial discovery hypothesis: direct seller intake could benefit from fresh owner/condition research. Exact principal, incremental value and paid demand require human validation.",
+        "basis": "research_inference_from_cited_profile_evidence",
+        "source_urls": [
+          "https://www.four19properties.com/our-locations/dallas/"
+        ]
+      },
+      "shortlist_for_personal_vetting": true,
+      "review_status": "pending",
+      "outreach_approved": false,
+      "retrieved_at": "2026-09-17",
+      "source_url": "https://www.four19properties.com/our-locations/dallas/"
+    },
+    {
+      "buyer_id": "houston_house_buyers",
+      "buyer_name": "Houston House Buyers",
+      "buyer_type": "local_cash_buyer",
+      "size_tier": "local_private",
+      "county_fips": [
+        "48201"
+      ],
+      "county_fips_semantics": "target intersection for research; exact parcel eligibility unconfirmed",
+      "coverage": {
+        "value": "Houston and surrounding areas advertised; county-wide coverage unknown.",
+        "basis": "company_statement",
+        "source_urls": [
+          "https://www.houstonhousebuyers.com/"
+        ]
+      },
+      "buy_box": {
+        "property_types": [
+          "houses"
+        ],
+        "condition_and_distress": "Liens, uninhabitable homes, fire damage, tenants; any-price language is not a numeric buy box.",
+        "purchase_price_min": null,
+        "purchase_price_max": null,
+        "price_basis": "not_verified",
+        "target_zip_codes": null,
+        "purchase_cadence": null,
+        "cash_funding_verified": false,
+        "source_urls": [
+          "https://www.houstonhousebuyers.com/"
+        ]
+      },
+      "contact_paths": [
+        {
+          "contact_type": "public_web_path",
+          "email": null,
+          "url": "https://www.houstonhousebuyers.com/",
+          "role": "public business intake; data procurement authority unverified",
+          "source_url": "https://www.houstonhousebuyers.com/",
+          "contacted": false
+        }
+      ],
+      "sourcing_channels": [
+        {
+          "value": "Direct seller web intake.",
+          "basis": "company_statement",
+          "source_urls": [
+            "https://www.houstonhousebuyers.com/"
+          ]
+        }
+      ],
+      "legitimacy_review": {
+        "identity_evidence": {
+          "value": "Website claims A+ BBB; same-name BBB profile is not rated/not accredited and has different contact details. Exact entity/domain linkage unresolved.",
+          "basis": "independent_directory_and_company_comparison",
+          "source_urls": [
+            "https://www.houstonhousebuyers.com/",
+            "https://www.bbb.org/us/tx/houston/profile/real-estate-investing/houston-house-buyers-0915-90035780"
+          ]
+        },
+        "license_status": "not_verified; resolve exact contracting entity and role before relying on a brokerage claim",
+        "registry_check_url": "https://www.trec.texas.gov/license-search",
+        "reviews_status": {
+          "value": "Only identified public pages reviewed; absence of a cited complaint is not clearance.",
+          "basis": "research_scope_or_unresolved_check",
+          "source_urls": [
+            "https://www.houstonhousebuyers.com/",
+            "https://www.bbb.org/us/tx/houston/profile/real-estate-investing/houston-house-buyers-0915-90035780"
+          ]
+        }
+      },
+      "risk_flags": [
+        "Conflicting reputation claims or name collision; do not equate the two entities without proof."
+      ],
+      "confidence": "unverified",
+      "confidence_scope": "candidate identity and relevance; not funds, title, license clearance, or willingness to buy data",
+      "data_product_fit": {
+        "status": "unverified",
+        "willingness_to_pay": null,
+        "assessment": "Hold pending independent identity and closing evidence; public marketing alone is insufficient to activate a buyer profile.",
+        "basis": "research_inference_from_cited_profile_evidence",
+        "source_urls": [
+          "https://www.houstonhousebuyers.com/"
+        ]
+      },
+      "shortlist_for_personal_vetting": false,
+      "review_status": "pending",
+      "outreach_approved": false,
+      "retrieved_at": "2026-09-17",
+      "source_url": "https://www.houstonhousebuyers.com/"
+    },
+    {
+      "buyer_id": "tx_cash",
+      "buyer_name": "TX Cash Home Buyers",
+      "buyer_type": "cash_buyer_and_investor_network",
+      "size_tier": "regional_private",
+      "county_fips": [
+        "48201",
+        "48113"
+      ],
+      "county_fips_semantics": "target intersection for research; exact parcel eligibility unconfirmed",
+      "coverage": {
+        "value": "Harris County expressly named; Dallas/DFW advertised.",
+        "basis": "company_statement",
+        "source_urls": [
+          "https://www.txcashhomebuyers.com/"
+        ]
+      },
+      "buy_box": {
+        "property_types": [
+          "houses"
+        ],
+        "condition_and_distress": "Major repairs, title issues, tenants; excludes currently agent-listed properties.",
+        "purchase_price_min": null,
+        "purchase_price_max": null,
+        "price_basis": "not_verified",
+        "target_zip_codes": null,
+        "purchase_cadence": null,
+        "cash_funding_verified": false,
+        "source_urls": [
+          "https://www.txcashhomebuyers.com/"
+        ]
+      },
+      "contact_paths": [
+        {
+          "contact_type": "public_web_path",
+          "email": null,
+          "url": "https://www.txcashhomebuyers.com/",
+          "role": "public business intake; data procurement authority unverified",
+          "source_url": "https://www.txcashhomebuyers.com/",
+          "contacted": false
+        }
+      ],
+      "sourcing_channels": [
+        {
+          "value": "Seller intake, investor network, direct cash and alternative selling programs.",
+          "basis": "company_statement",
+          "source_urls": [
+            "https://www.txcashhomebuyers.com/"
+          ]
+        }
+      ],
+      "legitimacy_review": {
+        "identity_evidence": {
+          "value": "Matching brand BBB page in Deer Park is accredited A+; a separate similarly named League City business must not be merged.",
+          "basis": "independent_directory_and_company_comparison",
+          "source_urls": [
+            "https://www.bbb.org/us/tx/deer-park/profile/real-estate-investing/tx-cash-home-buyers-0915-90063279"
+          ]
+        },
+        "license_status": "not_verified; resolve exact contracting entity and role before relying on a brokerage claim",
+        "registry_check_url": "https://www.trec.texas.gov/license-search",
+        "reviews_status": {
+          "value": "Only identified public pages reviewed; absence of a cited complaint is not clearance.",
+          "basis": "research_scope_or_unresolved_check",
+          "source_urls": [
+            "https://www.bbb.org/us/tx/deer-park/profile/real-estate-investing/tx-cash-home-buyers-0915-90063279"
+          ]
+        }
+      },
+      "risk_flags": [
+        "Direct Cash, Market Max and Strategic Listing are different products; establish who actually buys.",
+        "Alternative-program routing creates a brokerage/data-product scope question."
+      ],
+      "confidence": "probable",
+      "confidence_scope": "candidate identity and relevance; not funds, title, license clearance, or willingness to buy data",
+      "data_product_fit": {
+        "status": "unverified",
+        "willingness_to_pay": null,
+        "assessment": "Conditional discovery target: separate principal cash purchases from listing/placement programs before evaluating a data-only relationship.",
+        "basis": "research_inference_from_cited_profile_evidence",
+        "source_urls": [
+          "https://www.txcashhomebuyers.com/"
+        ]
+      },
+      "shortlist_for_personal_vetting": true,
+      "review_status": "pending",
+      "outreach_approved": false,
+      "retrieved_at": "2026-09-17",
+      "source_url": "https://www.txcashhomebuyers.com/"
+    },
+    {
+      "buyer_id": "house_buyers_america",
+      "buyer_name": "House Buyers of America",
+      "buyer_type": "national_cash_buyer",
+      "size_tier": "national_private",
+      "county_fips": [
+        "48113",
+        "48201"
+      ],
+      "county_fips_semantics": "target intersection for research; exact parcel eligibility unconfirmed",
+      "coverage": {
+        "value": "Texas service list includes Dallas and Houston.",
+        "basis": "company_statement",
+        "source_urls": [
+          "https://www.housebuyersofamerica.com/we-buy-houses/texas"
+        ]
+      },
+      "buy_box": {
+        "property_types": [
+          "houses"
+        ],
+        "condition_and_distress": "As-is distressed houses and inherited homes; tax-pressure situations advertised.",
+        "purchase_price_min": null,
+        "purchase_price_max": null,
+        "price_basis": "not_verified",
+        "target_zip_codes": null,
+        "purchase_cadence": null,
+        "cash_funding_verified": false,
+        "source_urls": [
+          "https://www.housebuyersofamerica.com/we-buy-houses/texas/dallas",
+          "https://www.housebuyersofamerica.com/we-buy-houses/texas"
+        ]
+      },
+      "contact_paths": [
+        {
+          "contact_type": "public_web_path",
+          "email": null,
+          "url": "https://www.housebuyersofamerica.com/we-buy-houses/texas/dallas",
+          "role": "public business intake; data procurement authority unverified",
+          "source_url": "https://www.housebuyersofamerica.com/we-buy-houses/texas/dallas",
+          "contacted": false
+        }
+      ],
+      "sourcing_channels": [
+        {
+          "value": "Direct homeowner cash-offer intake.",
+          "basis": "company_statement",
+          "source_urls": [
+            "https://www.housebuyersofamerica.com/we-buy-houses/texas/dallas"
+          ]
+        }
+      ],
+      "legitimacy_review": {
+        "identity_evidence": {
+          "value": "BBB identifies House Buyers of America, Inc, accredited A+; complaints include repeated mailings and alleged withdrawal shortly before closing outside Texas.",
+          "basis": "independent_directory_and_company_comparison",
+          "source_urls": [
+            "https://www.bbb.org/us/va/vienna/profile/real-estate-investing/house-buyers-of-america-inc-0241-7002756/complaints"
+          ]
+        },
+        "license_status": "not_verified; resolve exact contracting entity and role before relying on a brokerage claim",
+        "registry_check_url": "https://www.trec.texas.gov/license-search",
+        "reviews_status": {
+          "value": "Only identified public pages reviewed; absence of a cited complaint is not clearance.",
+          "basis": "research_scope_or_unresolved_check",
+          "source_urls": [
+            "https://www.bbb.org/us/va/vienna/profile/real-estate-investing/house-buyers-of-america-inc-0241-7002756/complaints"
+          ]
+        }
+      },
+      "risk_flags": [
+        "National complaint history is not a finding about the Texas team.",
+        "Verify termination terms, opt-out controls and Texas contracting entity."
+      ],
+      "confidence": "probable",
+      "confidence_scope": "candidate identity and relevance; not funds, title, license clearance, or willingness to buy data",
+      "data_product_fit": {
+        "status": "unverified",
+        "willingness_to_pay": null,
+        "assessment": "Initial discovery hypothesis: direct seller intake could benefit from fresh owner/condition research. Exact principal, incremental value and paid demand require human validation.",
+        "basis": "research_inference_from_cited_profile_evidence",
+        "source_urls": [
+          "https://www.housebuyersofamerica.com/we-buy-houses/texas",
+          "https://www.housebuyersofamerica.com/we-buy-houses/texas/dallas"
+        ]
+      },
+      "shortlist_for_personal_vetting": true,
+      "review_status": "pending",
+      "outreach_approved": false,
+      "retrieved_at": "2026-09-17",
+      "source_url": "https://www.housebuyersofamerica.com/we-buy-houses/texas/dallas"
+    },
+    {
+      "buyer_id": "new_western",
+      "buyer_name": "New Western",
+      "buyer_type": "wholesale_brokerage_marketplace",
+      "size_tier": "national_network",
+      "county_fips": [
+        "48113",
+        "48201"
+      ],
+      "county_fips_semantics": "target intersection for research; exact parcel eligibility unconfirmed",
+      "coverage": {
+        "value": "Dallas and Houston offices identified; exact parcel coverage remains unverified.",
+        "basis": "company_statement",
+        "source_urls": [
+          "https://www.newwestern.com/office/dallas-tx/",
+          "https://www.newwestern.com/office/houston-tx/"
+        ]
+      },
+      "buy_box": {
+        "property_types": [
+          "distressed residential"
+        ],
+        "condition_and_distress": "Fixers and outdated homes; price/rehab thresholds unverified.",
+        "purchase_price_min": null,
+        "purchase_price_max": null,
+        "price_basis": "not_verified",
+        "target_zip_codes": null,
+        "purchase_cadence": null,
+        "cash_funding_verified": false,
+        "source_urls": [
+          "https://www.newwestern.com/office/dallas-tx/"
+        ]
+      },
+      "contact_paths": [
+        {
+          "contact_type": "public_web_path",
+          "email": null,
+          "url": "https://www.newwestern.com/office/dallas-tx/",
+          "role": "public business intake; data procurement authority unverified",
+          "source_url": "https://www.newwestern.com/office/dallas-tx/",
+          "contacted": false
+        }
+      ],
+      "sourcing_channels": [
+        {
+          "value": "Homeowners, listing agents and wholesalers; disposition support and transaction compensation.",
+          "basis": "company_statement",
+          "source_urls": [
+            "https://www.newwestern.com/office/dallas-tx/"
+          ]
+        }
+      ],
+      "legitimacy_review": {
+        "identity_evidence": {
+          "value": "Official office footers map Dallas to 589457 and Houston to 604727; both match active TREC broker-company records.",
+          "basis": "company_disclosure_and_state_registry",
+          "source_urls": [
+            "https://www.newwestern.com/office/dallas-tx/",
+            "https://www.newwestern.com/office/houston-tx/"
+          ]
+        },
+        "license_status": "verified_active_in_TREC_public_dataset; applies to named brokerage entity, not every affiliated purchasing LLC",
+        "registry_check_url": "https://data.texas.gov/dataset/Broker-and-Sales-Agent-License-Holder-Information/s7ft-44qi/about_data",
+        "reviews_status": {
+          "value": "Anonymous mixed/negative investor discussions are diligence leads, not verified findings.",
+          "basis": "anonymous_reviews",
+          "source_urls": [
+            "https://www.reddit.com/r/WholesaleRealestate/comments/1i0lzxq/networth_realty_vs_new_western/",
+            "https://www.reddit.com/r/realestateinvesting/comments/1k5otvq"
+          ]
+        },
+        "license_records": [
+          {
+            "license_type": "Broker Company",
+            "license_number": "589457-BB",
+            "full_name": "UNITED INVESTEXUSA, LLC",
+            "status": "Active",
+            "license_expiration_date": "09/30/2027",
+            "county": "Dallas",
+            "updated": "2026-09-02T07:30:01.000",
+            "source_url": "https://data.texas.gov/resource/s7ft-44qi.json?license_number=589457-BB",
+            "retrieved_at": "2026-09-17"
+          },
+          {
+            "license_type": "Broker Company",
+            "license_number": "604727-BB",
+            "full_name": "UNITED INVESTEXUSA 3, LLC",
+            "status": "Active",
+            "license_expiration_date": "05/31/2027",
+            "county": "",
+            "updated": "2026-04-15T11:49:51.000",
+            "source_url": "https://data.texas.gov/resource/s7ft-44qi.json?license_number=604727-BB",
+            "retrieved_at": "2026-09-17"
+          }
+        ]
+      },
+      "risk_flags": [
+        "Marketplace and transaction counterparty, not a verified end landlord.",
+        "Referral/assignment/disposition expectations require scope and licensing review."
+      ],
+      "confidence": "verified",
+      "confidence_scope": "Operating identity, market relevance and named brokerage license; funding, exact buy box, data purchasing and outreach remain unverified.",
+      "data_product_fit": {
+        "status": "unverified",
+        "willingness_to_pay": null,
+        "assessment": "Potential research user and competing intermediary; distinguish data procurement from representation, assignments or closing-contingent referrals.",
+        "basis": "research_inference_from_cited_profile_evidence",
+        "source_urls": [
+          "https://www.newwestern.com/office/dallas-tx/",
+          "https://www.newwestern.com/office/houston-tx/"
+        ]
+      },
+      "shortlist_for_personal_vetting": true,
+      "review_status": "pending",
+      "outreach_approved": false,
+      "retrieved_at": "2026-09-17",
+      "source_url": "https://www.newwestern.com/office/dallas-tx/"
+    },
+    {
+      "buyer_id": "networth",
+      "buyer_name": "NetWorth Realty",
+      "buyer_type": "wholesale_brokerage_marketplace",
+      "size_tier": "national_network",
+      "county_fips": [
+        "48201",
+        "48113"
+      ],
+      "county_fips_semantics": "target intersection for research; exact parcel eligibility unconfirmed",
+      "coverage": {
+        "value": "Dallas and Houston offices in official directory.",
+        "basis": "company_statement",
+        "source_urls": [
+          "https://networthrealtyusa.com/locations/"
+        ]
+      },
+      "buy_box": {
+        "property_types": [
+          "off-market distressed real estate"
+        ],
+        "condition_and_distress": "Distressed/as-is properties; price limits unknown.",
+        "purchase_price_min": null,
+        "purchase_price_max": null,
+        "price_basis": "not_verified",
+        "target_zip_codes": null,
+        "purchase_cadence": null,
+        "cash_funding_verified": false,
+        "source_urls": [
+          "https://networthrealtyusa.com/"
+        ]
+      },
+      "contact_paths": [
+        {
+          "contact_type": "public_web_path",
+          "email": null,
+          "url": "https://networthrealtyusa.com/contact-us/",
+          "role": "public business intake; data procurement authority unverified",
+          "source_url": "https://networthrealtyusa.com/contact-us/",
+          "contacted": false
+        }
+      ],
+      "sourcing_channels": [
+        {
+          "value": "Connects distressed sellers with investor buyers through local agents.",
+          "basis": "company_statement",
+          "source_urls": [
+            "https://networthrealtyusa.com/"
+          ]
+        }
+      ],
+      "legitimacy_review": {
+        "identity_evidence": {
+          "value": "Operating office directory and company brokerage claims found.",
+          "basis": "company_statement",
+          "source_urls": [
+            "https://networthrealtyusa.com/locations/",
+            "https://networthrealtyusa.com/"
+          ]
+        },
+        "license_status": "verified_active_in_TREC_public_dataset; applies to named brokerage entity, not every affiliated purchasing LLC",
+        "registry_check_url": "https://data.texas.gov/dataset/Broker-and-Sales-Agent-License-Holder-Information/s7ft-44qi/about_data",
+        "reviews_status": {
+          "value": "Anonymous investor thread alleges contractor/rehab problems; includes conflicting experiences and is not an adjudicated finding.",
+          "basis": "anonymous_reviews",
+          "source_urls": [
+            "https://www.reddit.com/r/realestateinvesting/comments/1k5otvq"
+          ]
+        },
+        "license_records": [
+          {
+            "license_type": "Broker Company",
+            "license_number": "587060-BB",
+            "full_name": "NETWORTH REALTY OF DALLAS/FORT WORTH LLC",
+            "status": "Active",
+            "license_expiration_date": "06/30/2027",
+            "county": "Dallas",
+            "updated": "2026-08-21T06:00:06.000",
+            "source_url": "https://data.texas.gov/resource/s7ft-44qi.json?license_number=587060-BB",
+            "retrieved_at": "2026-09-17"
+          },
+          {
+            "license_type": "Broker Company",
+            "license_number": "586150-BB",
+            "full_name": "NETWORTH REALTY OF HOUSTON, LLC",
+            "status": "Active",
+            "license_expiration_date": "05/31/2027",
+            "county": "Harris",
+            "updated": "2026-08-29T07:30:01.000",
+            "source_url": "https://data.texas.gov/resource/s7ft-44qi.json?license_number=586150-BB",
+            "retrieved_at": "2026-09-17"
+          }
+        ]
+      },
+      "risk_flags": [
+        "Transaction marketplace, not proven purchaser of raw data.",
+        "Independently validate rehab estimates and any related service referrals."
+      ],
+      "confidence": "verified",
+      "confidence_scope": "Operating identity, market relevance and named brokerage license; funding, exact buy box, data purchasing and outreach remain unverified.",
+      "data_product_fit": {
+        "status": "unverified",
+        "willingness_to_pay": null,
+        "assessment": "Potential research user and competing intermediary; distinguish data procurement from representation, assignments or closing-contingent referrals.",
+        "basis": "research_inference_from_cited_profile_evidence",
+        "source_urls": [
+          "https://networthrealtyusa.com/locations/",
+          "https://networthrealtyusa.com/"
+        ]
+      },
+      "shortlist_for_personal_vetting": true,
+      "review_status": "pending",
+      "outreach_approved": false,
+      "retrieved_at": "2026-09-17",
+      "source_url": "https://networthrealtyusa.com/"
+    },
+    {
+      "buyer_id": "homevestors",
+      "buyer_name": "HomeVestors / We Buy Ugly Houses",
+      "buyer_type": "franchise_network_not_corporate_buyer",
+      "size_tier": "national_franchise",
+      "county_fips": [
+        "48201",
+        "48113"
+      ],
+      "county_fips_semantics": "target intersection for research; exact parcel eligibility unconfirmed",
+      "coverage": {
+        "value": "Research targets are local Houston/Dallas franchisees; national brand coverage is not local entity verification.",
+        "basis": "company_statement",
+        "source_urls": [
+          "https://www.homevestors.com/we-buy-ugly-houses/"
+        ]
+      },
+      "buy_box": {
+        "property_types": [
+          "houses",
+          "condos",
+          "townhomes",
+          "multi-unit properties"
+        ],
+        "condition_and_distress": "As-is and structural/cosmetic issues; local franchise buy box varies.",
+        "purchase_price_min": null,
+        "purchase_price_max": null,
+        "price_basis": "not_verified",
+        "target_zip_codes": null,
+        "purchase_cadence": null,
+        "cash_funding_verified": false,
+        "source_urls": [
+          "https://www.homevestors.com/we-buy-ugly-houses/"
+        ]
+      },
+      "contact_paths": [
+        {
+          "contact_type": "public_web_path",
+          "email": null,
+          "url": "https://www.homevestors.com/contact/",
+          "role": "Corporate contact route; corporation states it does not buy or sell houses; local franchise entity not selected",
+          "source_url": "https://www.homevestors.com/contact/",
+          "contacted": false
+        }
+      ],
+      "sourcing_channels": [
+        {
+          "value": "Franchise advertising lead program and financing partners.",
+          "basis": "company_statement",
+          "source_urls": [
+            "https://franchise.homevestors.com/about/franchise-faqs/"
+          ]
+        }
+      ],
+      "legitimacy_review": {
+        "identity_evidence": {
+          "value": "Corporate explicitly states it does not buy or sell houses; franchisees are independent.",
+          "basis": "company_statement",
+          "source_urls": [
+            "https://www.homevestors.com/contact/",
+            "https://franchise.homevestors.com/about/franchise-faqs/"
+          ]
+        },
+        "license_status": "Local franchise entity not selected; no TREC finding",
+        "reviews_status": {
+          "value": "No local franchise-specific complaint clearance; corporate reputation cannot substitute.",
+          "basis": "research_scope_or_unresolved_check",
+          "source_urls": [
+            "https://www.homevestors.com/contact/",
+            "https://franchise.homevestors.com/about/franchise-faqs/"
+          ]
+        }
+      },
+      "risk_flags": [
+        "Franchise/training sales channel is distinct from acquisitions.",
+        "Franchise fees/mentoring are not evidence of scam, but do not buy access to supposed buyer demand.",
+        "No corporate end-buyer profile should be activated."
+      ],
+      "confidence": "probable",
+      "confidence_scope": "candidate identity and relevance; not funds, title, license clearance, or willingness to buy data",
+      "data_product_fit": {
+        "status": "unverified",
+        "willingness_to_pay": null,
+        "assessment": "Brand/channel watchlist only until a local purchasing entity is identified; franchise or brand sales are not demand for this data.",
+        "basis": "research_inference_from_cited_profile_evidence",
+        "source_urls": [
+          "https://www.homevestors.com/we-buy-ugly-houses/",
+          "https://franchise.homevestors.com/about/franchise-faqs/"
+        ]
+      },
+      "shortlist_for_personal_vetting": false,
+      "review_status": "pending",
+      "outreach_approved": false,
+      "retrieved_at": "2026-09-17",
+      "source_url": "https://www.homevestors.com/we-buy-ugly-houses/"
+    },
+    {
+      "buyer_id": "we_buy_houses",
+      "buyer_name": "WeBuyHouses.com / local licensees",
+      "buyer_type": "brand_licensing_and_lead_network",
+      "size_tier": "national_network",
+      "county_fips": [
+        "48113",
+        "48201"
+      ],
+      "county_fips_semantics": "target intersection for research; exact parcel eligibility unconfirmed",
+      "coverage": {
+        "value": "Dallas and Houston market pages found; each local operator still needs identification.",
+        "basis": "company_statement",
+        "source_urls": [
+          "https://webuyhouses.com/tx/dallas/",
+          "https://webuyhouses.com/tx/houston"
+        ]
+      },
+      "buy_box": {
+        "property_types": [
+          "homes",
+          "condos",
+          "land"
+        ],
+        "condition_and_distress": "Any-condition/any-price marketing; no numeric budget established.",
+        "purchase_price_min": null,
+        "purchase_price_max": null,
+        "price_basis": "not_verified",
+        "target_zip_codes": null,
+        "purchase_cadence": null,
+        "cash_funding_verified": false,
+        "source_urls": [
+          "https://webuyhouses.com/tx/dallas/",
+          "https://webuyhouses.com/tx/houston"
+        ]
+      },
+      "contact_paths": [
+        {
+          "contact_type": "public_web_path",
+          "email": null,
+          "url": "https://webuyhouses.com/tx/dallas/",
+          "role": "public business intake; data procurement authority unverified",
+          "source_url": "https://webuyhouses.com/tx/dallas/",
+          "contacted": false
+        }
+      ],
+      "sourcing_channels": [
+        {
+          "value": "Brand licensees capture motivated-seller leads via national platform.",
+          "basis": "company_statement",
+          "source_urls": [
+            "https://webuyhouses.com/investors"
+          ]
+        }
+      ],
+      "legitimacy_review": {
+        "identity_evidence": {
+          "value": "Terms identify independent local businesses and say WBH Marketing is not a licensed real estate broker.",
+          "basis": "company_statement",
+          "source_urls": [
+            "https://webuyhouses.com/terms"
+          ]
+        },
+        "license_status": "Brand license is not a TREC license; local entity unverified",
+        "reviews_status": {
+          "value": "No local-operator review clearance.",
+          "basis": "research_scope_or_unresolved_check",
+          "source_urls": [
+            "https://webuyhouses.com/terms"
+          ]
+        }
+      },
+      "risk_flags": [
+        "Do not confuse with HomeVestors or generic similarly named buyers.",
+        "Licensing/lead-selling business; possible competitor/channel, not corporate cash buyer."
+      ],
+      "confidence": "probable",
+      "confidence_scope": "candidate identity and relevance; not funds, title, license clearance, or willingness to buy data",
+      "data_product_fit": {
+        "status": "unverified",
+        "willingness_to_pay": null,
+        "assessment": "Brand/channel watchlist only until a local purchasing entity is identified; franchise or brand sales are not demand for this data.",
+        "basis": "research_inference_from_cited_profile_evidence",
+        "source_urls": [
+          "https://webuyhouses.com/tx/dallas/",
+          "https://webuyhouses.com/tx/houston",
+          "https://webuyhouses.com/investors"
+        ]
+      },
+      "shortlist_for_personal_vetting": false,
+      "review_status": "pending",
+      "outreach_approved": false,
+      "retrieved_at": "2026-09-17",
+      "source_url": "https://webuyhouses.com/tx/dallas/"
+    },
+    {
+      "buyer_id": "opendoor",
+      "buyer_name": "Opendoor",
+      "buyer_type": "ibuyer",
+      "size_tier": "national_platform",
+      "county_fips": [
+        "48201",
+        "48113"
+      ],
+      "county_fips_semantics": "target intersection for research; exact parcel eligibility unconfirmed",
+      "coverage": {
+        "value": "Official help lists Houston and Dallas-Fort Worth; parcel eligibility still required.",
+        "basis": "company_statement",
+        "source_urls": [
+          "https://help.opendoor.com/selling/how-it-works/where-does-opendoor-buy"
+        ]
+      },
+      "buy_box": {
+        "property_types": [
+          "single-family",
+          "townhomes",
+          "some condos"
+        ],
+        "condition_and_distress": "Minor cosmetic issues considered; major structural/foundation/fire/water damage may disqualify; manufactured, vacant land and 5+ units excluded.",
+        "purchase_price_min": null,
+        "purchase_price_max": null,
+        "price_basis": "not_verified",
+        "target_zip_codes": null,
+        "purchase_cadence": null,
+        "cash_funding_verified": false,
+        "source_urls": [
+          "https://help.opendoor.com/selling/how-it-works/what-types-of-homes"
+        ]
+      },
+      "contact_paths": [
+        {
+          "contact_type": "public_web_path",
+          "email": null,
+          "url": "https://help.opendoor.com/selling/how-it-works/where-does-opendoor-buy",
+          "role": "Official help/offer-flow reference only; acquisitions or data-procurement contact not verified",
+          "source_url": "https://help.opendoor.com/selling/how-it-works/where-does-opendoor-buy",
+          "contacted": false
+        }
+      ],
+      "sourcing_channels": [
+        {
+          "value": "Direct seller offer flow.",
+          "basis": "company_statement",
+          "source_urls": [
+            "https://help.opendoor.com/selling/how-it-works/where-does-opendoor-buy"
+          ]
+        }
+      ],
+      "legitimacy_review": {
+        "identity_evidence": {
+          "value": "FTC final consent order names Opendoor Labs; real operating company, not endorsement.",
+          "basis": "regulator",
+          "source_urls": [
+            "https://www.ftc.gov/news-events/news/press-releases/2022/10/ftc-approves-final-order-against-opendoor-labs-preventing-company-misleading-consumers-about-cost"
+          ]
+        },
+        "license_status": "verified_active_in_TREC_public_dataset; applies to named brokerage entity, not every affiliated purchasing LLC",
+        "reviews_status": {
+          "value": "2022 final FTC order required $62M for misleading seller-cost/savings claims.",
+          "basis": "regulator",
+          "source_urls": [
+            "https://www.ftc.gov/news-events/news/press-releases/2022/10/ftc-approves-final-order-against-opendoor-labs-preventing-company-misleading-consumers-about-cost"
+          ]
+        },
+        "license_records": [
+          {
+            "license_type": "Broker Company",
+            "license_number": "9008105-BB",
+            "full_name": "OPENDOOR BROKERAGE LLC",
+            "status": "Active",
+            "license_expiration_date": "03/31/2027",
+            "county": "AZ",
+            "updated": "2026-08-29T07:30:01.000",
+            "source_url": "https://data.texas.gov/resource/s7ft-44qi.json?license_number=9008105-BB",
+            "retrieved_at": "2026-09-17"
+          }
+        ],
+        "registry_check_url": "https://data.texas.gov/dataset/Broker-and-Sales-Agent-License-Holder-Information/s7ft-44qi/about_data"
+      },
+      "risk_flags": [
+        "Poor fit for severe distress; buying tax-delinquent properties specifically unverified.",
+        "Final regulatory order concerning seller claims; do not market savings guarantees."
+      ],
+      "confidence": "verified",
+      "confidence_scope": "Operating identity, market relevance and named brokerage license; funding, exact buy box, data purchasing and outreach remain unverified.",
+      "data_product_fit": {
+        "status": "unverified",
+        "willingness_to_pay": null,
+        "assessment": "Lower-priority hypothesis due to property-condition/eligibility restrictions; public seller or agent intake does not establish data procurement.",
+        "basis": "research_inference_from_cited_profile_evidence",
+        "source_urls": [
+          "https://help.opendoor.com/selling/how-it-works/where-does-opendoor-buy"
+        ]
+      },
+      "shortlist_for_personal_vetting": false,
+      "review_status": "pending",
+      "outreach_approved": false,
+      "retrieved_at": "2026-09-17",
+      "source_url": "https://help.opendoor.com/selling/how-it-works/what-types-of-homes"
+    },
+    {
+      "buyer_id": "offerpad",
+      "buyer_name": "Offerpad",
+      "buyer_type": "ibuyer_and_brokerage",
+      "size_tier": "national_platform",
+      "county_fips": [
+        "48201",
+        "48113"
+      ],
+      "county_fips_semantics": "target intersection for research; exact parcel eligibility unconfirmed",
+      "coverage": {
+        "value": "Houston and Dallas seller market pages found.",
+        "basis": "company_statement",
+        "source_urls": [
+          "https://www.offerpad.com/sell/houston-tx/",
+          "https://www.offerpad.com/sell/dallas-tx/"
+        ]
+      },
+      "buy_box": {
+        "property_types": [
+          "single-family",
+          "townhomes"
+        ],
+        "condition_and_distress": "Typically excludes pre-1950, >2-acre lots, >$1M value (market dependent), substantial structural defects, unclear ownership and double escrow; vacancy required.",
+        "purchase_price_min": null,
+        "purchase_price_max": null,
+        "price_basis": "FAQ describes typical home-value ceiling, not a binding purchase-price budget; numeric purchase-price fields intentionally null.",
+        "target_zip_codes": null,
+        "purchase_cadence": null,
+        "cash_funding_verified": false,
+        "source_urls": [
+          "https://www.offerpad.com/faq/sell-your-house/"
+        ]
+      },
+      "contact_paths": [
+        {
+          "contact_type": "public_web_path",
+          "email": null,
+          "url": "https://www.offerpad.com/agents/",
+          "role": "public business intake; data procurement authority unverified",
+          "source_url": "https://www.offerpad.com/agents/",
+          "contacted": false
+        }
+      ],
+      "sourcing_channels": [
+        {
+          "value": "Direct homeowners; agent and builder partnerships.",
+          "basis": "company_statement",
+          "source_urls": [
+            "https://www.offerpad.com/faq/sell-your-house/",
+            "https://www.offerpad.com/agents/"
+          ]
+        }
+      ],
+      "legitimacy_review": {
+        "identity_evidence": {
+          "value": "Published Texas IABS and active TREC record for Offerpad Brokerage, LLC.",
+          "basis": "company_statement",
+          "source_urls": [
+            "https://www.offerpad.com/wp-content/uploads/2025/02/Texas-IABS-2.10.25.pdf"
+          ]
+        },
+        "license_status": "verified_active_in_TREC_public_dataset; applies to named brokerage entity, not every affiliated purchasing LLC",
+        "registry_check_url": "https://data.texas.gov/dataset/Broker-and-Sales-Agent-License-Holder-Information/s7ft-44qi/about_data",
+        "reviews_status": {
+          "value": "No comprehensive complaint clearance; published inspection/offer conditions apply.",
+          "basis": "research_scope_or_unresolved_check",
+          "source_urls": [
+            "https://www.offerpad.com/wp-content/uploads/2025/02/Texas-IABS-2.10.25.pdf"
+          ]
+        },
+        "license_records": [
+          {
+            "license_type": "Broker Company",
+            "license_number": "9007561-BB",
+            "full_name": "OFFERPAD BROKERAGE, LLC",
+            "status": "Active",
+            "license_expiration_date": "09/30/2028",
+            "county": "Denton",
+            "updated": "2026-09-02T07:30:01.000",
+            "source_url": "https://data.texas.gov/resource/s7ft-44qi.json?license_number=9007561-BB",
+            "retrieved_at": "2026-09-17"
+          }
+        ]
+      },
+      "risk_flags": [
+        "Agent referral compensation requires successful closing and representation; not data payment.",
+        "Severe repair/title complications may fail criteria."
+      ],
+      "confidence": "verified",
+      "confidence_scope": "Operating identity, market relevance and named brokerage license; funding, exact buy box, data purchasing and outreach remain unverified.",
+      "data_product_fit": {
+        "status": "unverified",
+        "willingness_to_pay": null,
+        "assessment": "Lower-priority hypothesis due to property-condition/eligibility restrictions; public seller or agent intake does not establish data procurement.",
+        "basis": "research_inference_from_cited_profile_evidence",
+        "source_urls": [
+          "https://www.offerpad.com/sell/houston-tx/",
+          "https://www.offerpad.com/sell/dallas-tx/",
+          "https://www.offerpad.com/faq/sell-your-house/",
+          "https://www.offerpad.com/agents/"
+        ]
+      },
+      "shortlist_for_personal_vetting": false,
+      "review_status": "pending",
+      "outreach_approved": false,
+      "retrieved_at": "2026-09-17",
+      "source_url": "https://www.offerpad.com/faq/sell-your-house/"
+    },
+    {
+      "buyer_id": "invitation",
+      "buyer_name": "Invitation Homes",
+      "buyer_type": "institutional_sfr_owner",
+      "size_tier": "public_reit",
+      "county_fips": [
+        "48201",
+        "48113"
+      ],
+      "county_fips_semantics": "target intersection for research; exact parcel eligibility unconfirmed",
+      "coverage": {
+        "value": "Dallas and Houston operating offices; this establishes footprint, not current acquisition appetite.",
+        "basis": "company_statement",
+        "source_urls": [
+          "https://www.invitationhomes.com/offices"
+        ]
+      },
+      "buy_box": {
+        "property_types": [
+          "single-family rentals"
+        ],
+        "condition_and_distress": "Quality/location orientation in 2021 company criteria; stale for a 2026 buy box, tax-suit tolerance unknown.",
+        "purchase_price_min": null,
+        "purchase_price_max": null,
+        "price_basis": "not_verified",
+        "target_zip_codes": null,
+        "purchase_cadence": null,
+        "cash_funding_verified": false,
+        "source_urls": [
+          "https://www.invitationhomes.com/blog/buying-homes-based-on-location-and-residents-needs"
+        ]
+      },
+      "contact_paths": [
+        {
+          "contact_type": "public_web_path",
+          "email": null,
+          "url": "https://invitationhomes.zendesk.com/hc/en-us/categories/15794174565901-Vendors-and-Third-Parties",
+          "role": "Public vendor/third-party help route; acquisitions or data-procurement authority unverified",
+          "source_url": "https://invitationhomes.zendesk.com/hc/en-us/categories/15794174565901-Vendors-and-Third-Parties",
+          "contacted": false
+        }
+      ],
+      "sourcing_channels": [
+        {
+          "value": "Historical direct acquisitions and partnership channels; current data-feed procurement unverified.",
+          "basis": "company_statement",
+          "source_urls": [
+            "https://www.invitationhomes.com/blog/buying-homes-based-on-location-and-residents-needs"
+          ]
+        }
+      ],
+      "legitimacy_review": {
+        "identity_evidence": {
+          "value": "Public investor site identifies Invitation Homes Inc. and INVH listing.",
+          "basis": "company_statement",
+          "source_urls": [
+            "https://www.invh.com/home/default.aspx"
+          ]
+        },
+        "license_status": "Public issuer evidence; no claim of adviser registration or local acquisition authorization",
+        "reviews_status": {
+          "value": "FTC FY2024 report confirms court-entered $48M judgment/settlement concerning renter practices.",
+          "basis": "regulator",
+          "source_urls": [
+            "https://www.ftc.gov/system/files/ftc_gov/pdf/fy2024ftcagencyfinancialreport11152024.pdf"
+          ]
+        }
+      },
+      "risk_flags": [
+        "Operating portfolio does not prove net buying.",
+        "Historical buy box; current institutional acquisition rules and appetite need review.",
+        "Vendor path is not proof of acquisitions/data purchasing authority."
+      ],
+      "confidence": "probable",
+      "confidence_scope": "candidate identity and relevance; not funds, title, license clearance, or willingness to buy data",
+      "data_product_fit": {
+        "status": "unverified",
+        "willingness_to_pay": null,
+        "assessment": "Institutional watchlist: historical footprint is insufficient; current acquisition mandate, regulatory applicability and procurement path need review.",
+        "basis": "research_inference_from_cited_profile_evidence",
+        "source_urls": [
+          "https://www.invitationhomes.com/offices",
+          "https://www.invitationhomes.com/blog/buying-homes-based-on-location-and-residents-needs"
+        ]
+      },
+      "shortlist_for_personal_vetting": false,
+      "review_status": "pending",
+      "outreach_approved": false,
+      "retrieved_at": "2026-09-17",
+      "source_url": "https://www.invitationhomes.com/blog/buying-homes-based-on-location-and-residents-needs"
+    },
+    {
+      "buyer_id": "amh",
+      "buyer_name": "AMH / American Homes 4 Rent",
+      "buyer_type": "institutional_sfr_owner_developer",
+      "size_tier": "public_reit",
+      "county_fips": [
+        "48201",
+        "48113"
+      ],
+      "county_fips_semantics": "target intersection for research; exact parcel eligibility unconfirmed",
+      "coverage": {
+        "value": "2025 annual report names Dallas-Fort Worth and Houston operating markets; exact county holdings and current acquisitions unverified.",
+        "basis": "company_statement",
+        "source_urls": [
+          "https://s29.q4cdn.com/671712101/files/doc_financials/2025/ar/AMH-2025-Annual-Report-Final.pdf"
+        ]
+      },
+      "buy_box": {
+        "property_types": [
+          "single-family rentals",
+          "new development"
+        ],
+        "condition_and_distress": "Current emphasis is development; no verified distressed buy box.",
+        "purchase_price_min": null,
+        "purchase_price_max": null,
+        "price_basis": "not_verified",
+        "target_zip_codes": null,
+        "purchase_cadence": null,
+        "cash_funding_verified": false,
+        "source_urls": [
+          "https://www.sec.gov/Archives/edgar/data/1562401/000156240126000043/amh0630268kexhibit991.htm"
+        ]
+      },
+      "contact_paths": [
+        {
+          "contact_type": "public_web_path",
+          "email": null,
+          "url": "https://www.amh.com/",
+          "role": "Public corporate site only; acquisitions or data-procurement contact not verified",
+          "source_url": "https://www.amh.com/",
+          "contacted": false
+        }
+      ],
+      "sourcing_channels": [
+        {
+          "value": "Q2 2026 release describes 542 wholly owned development deliveries; its full-year 2026 guidance lists no wholly owned acquisitions.",
+          "basis": "sec_filing",
+          "source_urls": [
+            "https://www.sec.gov/Archives/edgar/data/1562401/000156240126000043/amh0630268kexhibit991.htm"
+          ]
+        }
+      ],
+      "legitimacy_review": {
+        "identity_evidence": {
+          "value": "Current SEC-filed AMH quarterly release and company license directory.",
+          "basis": "sec_filing_and_company",
+          "source_urls": [
+            "https://www.sec.gov/Archives/edgar/data/1562401/000156240126000043/amh0630268kexhibit991.htm",
+            "https://www.amh.com/licenses"
+          ]
+        },
+        "license_status": "Public reporting entity; Texas entity-specific license status not checked",
+        "reviews_status": {
+          "value": "No acquisition-specific review clearance; resident anecdotes do not establish buying demand.",
+          "basis": "research_scope_or_unresolved_check",
+          "source_urls": [
+            "https://www.sec.gov/Archives/edgar/data/1562401/000156240126000043/amh0630268kexhibit991.htm",
+            "https://www.amh.com/licenses"
+          ]
+        }
+      },
+      "risk_flags": [
+        "Deprioritize: current quarter is not evidence of buying existing distressed houses.",
+        "Public corporate path is not an acquisitions inbox.",
+        "Current institutional acquisition restrictions require review."
+      ],
+      "confidence": "probable",
+      "confidence_scope": "candidate identity and relevance; not funds, title, license clearance, or willingness to buy data",
+      "data_product_fit": {
+        "status": "unverified",
+        "willingness_to_pay": null,
+        "assessment": "Institutional watchlist: historical footprint is insufficient; current acquisition mandate, regulatory applicability and procurement path need review.",
+        "basis": "research_inference_from_cited_profile_evidence",
+        "source_urls": [
+          "https://s29.q4cdn.com/671712101/files/doc_financials/2025/ar/AMH-2025-Annual-Report-Final.pdf",
+          "https://www.sec.gov/Archives/edgar/data/1562401/000156240126000043/amh0630268kexhibit991.htm"
+        ]
+      },
+      "shortlist_for_personal_vetting": false,
+      "review_status": "pending",
+      "outreach_approved": false,
+      "retrieved_at": "2026-09-17",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/1562401/000156240126000043/amh0630268kexhibit991.htm"
+    },
+    {
+      "buyer_id": "amherst",
+      "buyer_name": "Amherst / Main Street Renewal",
+      "buyer_type": "institutional_sfr_platform",
+      "size_tier": "private_institutional",
+      "county_fips": [
+        "48201",
+        "48113"
+      ],
+      "county_fips_semantics": "target intersection for research; exact parcel eligibility unconfirmed",
+      "coverage": {
+        "value": "Historical impact report includes Dallas and Houston; current county acquisition appetite unverified.",
+        "basis": "company_statement",
+        "source_urls": [
+          "https://www.amherst.com/wp-content/uploads/2023/03/2022-Amherst-Impact-Report-7.pdf"
+        ]
+      },
+      "buy_box": {
+        "property_types": [
+          "single-family rentals"
+        ],
+        "condition_and_distress": "Historical acquisition/renovation/lease strategy; current price band and tax-title tolerance unknown.",
+        "purchase_price_min": null,
+        "purchase_price_max": null,
+        "price_basis": "not_verified",
+        "target_zip_codes": null,
+        "purchase_cadence": null,
+        "cash_funding_verified": false,
+        "source_urls": [
+          "https://www.amherst.com/wp-content/uploads/2022/04/Amherst-2021-ESG-Report.pdf"
+        ]
+      },
+      "contact_paths": [
+        {
+          "contact_type": "public_web_path",
+          "email": null,
+          "url": "https://www.amherst.com/contact/",
+          "role": "Corporate contact page lists media/investor/impact roles; no suitable acquisitions or data-procurement email verified",
+          "source_url": "https://www.amherst.com/contact/",
+          "contacted": false
+        }
+      ],
+      "sourcing_channels": [
+        {
+          "value": "Vertically integrated acquisition/data platform; no public outside-lead purchase program verified.",
+          "basis": "company_statement",
+          "source_urls": [
+            "https://www.amherst.com/"
+          ]
+        }
+      ],
+      "legitimacy_review": {
+        "identity_evidence": {
+          "value": "SEC IAPD lists Amherst Capital Management LLC, CRD 174130, with SEC registration status Approved. This is the named adviser only; mapping to the prospective property purchaser remains unresolved.",
+          "basis": "sec_registry",
+          "source_urls": [
+            "https://adviserinfo.sec.gov/firm/summary/174130",
+            "https://reports.adviserinfo.sec.gov/reports/ADV/174130/PDF/174130.pdf"
+          ]
+        },
+        "license_status": "Named adviser registration corroborated; group, fund and property-counterparty mapping unresolved; no SEC endorsement implied",
+        "reviews_status": {
+          "value": "No local acquisition-specific review clearance.",
+          "basis": "research_scope_or_unresolved_check",
+          "source_urls": [
+            "https://adviserinfo.sec.gov/firm/summary/174130",
+            "https://reports.adviserinfo.sec.gov/reports/ADV/174130/PDF/174130.pdf"
+          ]
+        }
+      },
+      "risk_flags": [
+        "Contact page lists investor/media/impact roles, not property acquisitions; no suitable acquisitions email found.",
+        "Do not merge fund, adviser, property manager and property-holding LLCs.",
+        "Current institutional acquisition restrictions require review."
+      ],
+      "confidence": "probable",
+      "confidence_scope": "candidate identity and relevance; not funds, title, license clearance, or willingness to buy data",
+      "data_product_fit": {
+        "status": "unverified",
+        "willingness_to_pay": null,
+        "assessment": "Institutional watchlist: historical footprint is insufficient; current acquisition mandate, regulatory applicability and procurement path need review.",
+        "basis": "research_inference_from_cited_profile_evidence",
+        "source_urls": [
+          "https://www.amherst.com/wp-content/uploads/2023/03/2022-Amherst-Impact-Report-7.pdf",
+          "https://www.amherst.com/"
+        ]
+      },
+      "shortlist_for_personal_vetting": false,
+      "review_status": "pending",
+      "outreach_approved": false,
+      "retrieved_at": "2026-09-17",
+      "source_url": "https://www.amherst.com/wp-content/uploads/2022/04/Amherst-2021-ESG-Report.pdf"
+    },
+    {
+      "buyer_id": "progress",
+      "buyer_name": "Progress Residential / Pretium ecosystem",
+      "buyer_type": "institutional_sfr_operator",
+      "size_tier": "private_institutional",
+      "county_fips": [
+        "48201",
+        "48113"
+      ],
+      "county_fips_semantics": "target intersection for research; exact parcel eligibility unconfirmed",
+      "coverage": {
+        "value": "Historical governmental hearing material names Dallas-Fort Worth and Houston; current acquisitions not verified.",
+        "basis": "historical_public_hearing_material",
+        "source_urls": [
+          "https://www.govinfo.gov/content/pkg/CHRG-117hhrg48334/pdf/CHRG-117hhrg48334.pdf"
+        ]
+      },
+      "buy_box": {
+        "property_types": [
+          "single-family rentals"
+        ],
+        "condition_and_distress": "Management and renovation platform; current distressed buy box unknown.",
+        "purchase_price_min": null,
+        "purchase_price_max": null,
+        "price_basis": "not_verified",
+        "target_zip_codes": null,
+        "purchase_cadence": null,
+        "cash_funding_verified": false,
+        "source_urls": [
+          "https://rentprogress.com/about-us/news/announcements/progressresidential-highlights-contributes-to-economy-and-local-communities"
+        ]
+      },
+      "contact_paths": [
+        {
+          "contact_type": "public_web_path",
+          "email": null,
+          "url": "https://rentprogress.com/about-us/news/",
+          "role": "Public corporate research route only; no suitable acquisition intake verified",
+          "source_url": "https://rentprogress.com/about-us/news/",
+          "contacted": false
+        }
+      ],
+      "sourcing_channels": [
+        {
+          "value": "Company news documents historical Pretium/Ares Front Yard portfolio acquisition; does not establish current lead-data demand.",
+          "basis": "company_statement",
+          "source_urls": [
+            "https://rentprogress.com/about-us/news/"
+          ]
+        }
+      ],
+      "legitimacy_review": {
+        "identity_evidence": {
+          "value": "Company publishes operating entities/license list and historical portfolio activity.",
+          "basis": "company_statement",
+          "source_urls": [
+            "https://rentprogress.com/Licenses",
+            "https://rentprogress.com/about-us/news/"
+          ]
+        },
+        "license_status": "Company license list only; exact counterparty and current status unresolved",
+        "reviews_status": {
+          "value": "Public hearing includes tenant criticism; not acquisition fraud findings.",
+          "basis": "research_scope_or_unresolved_check",
+          "source_urls": [
+            "https://rentprogress.com/Licenses",
+            "https://rentprogress.com/about-us/news/"
+          ]
+        }
+      },
+      "risk_flags": [
+        "Operator may act for third-party investors; it is not automatically the property owner.",
+        "No verified acquisitions/business-development inbox.",
+        "Current institutional acquisition restrictions require review."
+      ],
+      "confidence": "probable",
+      "confidence_scope": "candidate identity and relevance; not funds, title, license clearance, or willingness to buy data",
+      "data_product_fit": {
+        "status": "unverified",
+        "willingness_to_pay": null,
+        "assessment": "Institutional watchlist: historical footprint is insufficient; current acquisition mandate, regulatory applicability and procurement path need review.",
+        "basis": "research_inference_from_cited_profile_evidence",
+        "source_urls": [
+          "https://www.govinfo.gov/content/pkg/CHRG-117hhrg48334/pdf/CHRG-117hhrg48334.pdf",
+          "https://rentprogress.com/about-us/news/"
+        ]
+      },
+      "shortlist_for_personal_vetting": false,
+      "review_status": "pending",
+      "outreach_approved": false,
+      "retrieved_at": "2026-09-17",
+      "source_url": "https://rentprogress.com/about-us/news/announcements/progressresidential-highlights-contributes-to-economy-and-local-communities"
+    },
+    {
+      "buyer_id": "provenial",
+      "buyer_name": "Provenial",
+      "buyer_type": "claimed_principal_acquisition_company",
+      "size_tier": "private_size_unverified",
+      "county_fips": [
+        "48113",
+        "48201"
+      ],
+      "county_fips_semantics": "target intersection for research; exact parcel eligibility unconfirmed",
+      "coverage": {
+        "value": "Dallas County explicitly included; Greater Houston advertised.",
+        "basis": "company_statement",
+        "source_urls": [
+          "https://provenial.com/"
+        ]
+      },
+      "buy_box": {
+        "property_types": [
+          "single-family",
+          "SFR portfolios",
+          "land",
+          "commercial"
+        ],
+        "condition_and_distress": "On/off-market principal acquisitions; specific tax-suit tolerance and numeric budget unknown.",
+        "purchase_price_min": null,
+        "purchase_price_max": null,
+        "price_basis": "not_verified",
+        "target_zip_codes": null,
+        "purchase_cadence": null,
+        "cash_funding_verified": false,
+        "source_urls": [
+          "https://provenial.com/"
+        ]
+      },
+      "contact_paths": [
+        {
+          "contact_type": "public_web_path",
+          "email": null,
+          "url": "https://provenial.com/",
+          "role": "public business intake; data procurement authority unverified",
+          "source_url": "https://provenial.com/",
+          "contacted": false
+        }
+      ],
+      "sourcing_channels": [
+        {
+          "value": "Property submissions and capital partners; company claims own comparable-sales dataset.",
+          "basis": "company_statement",
+          "source_urls": [
+            "https://provenial.com/"
+          ]
+        }
+      ],
+      "legitimacy_review": {
+        "identity_evidence": {
+          "value": "Site identifies Provenial LLC and claims principal purchases; transaction counts not independently verified.",
+          "basis": "company_statement",
+          "source_urls": [
+            "https://provenial.com/"
+          ]
+        },
+        "license_status": "Texas legal-entity/registration and role check unresolved",
+        "reviews_status": {
+          "value": "No attributable independent complaint/closing verification found in targeted search.",
+          "basis": "research_scope_or_unresolved_check",
+          "source_urls": [
+            "https://provenial.com/"
+          ]
+        }
+      },
+      "risk_flags": [
+        "Do not treat advertised transaction volume as audited.",
+        "Require exact entity, recent deeds and proof of funds before promotion."
+      ],
+      "confidence": "unverified",
+      "confidence_scope": "candidate identity and relevance; not funds, title, license clearance, or willingness to buy data",
+      "data_product_fit": {
+        "status": "unverified",
+        "willingness_to_pay": null,
+        "assessment": "Hold pending independent identity and closing evidence; public marketing alone is insufficient to activate a buyer profile.",
+        "basis": "research_inference_from_cited_profile_evidence",
+        "source_urls": [
+          "https://provenial.com/"
+        ]
+      },
+      "shortlist_for_personal_vetting": false,
+      "review_status": "pending",
+      "outreach_approved": false,
+      "retrieved_at": "2026-09-17",
+      "source_url": "https://provenial.com/"
+    },
+    {
+      "buyer_id": "praedia",
+      "buyer_name": "Praedia Capital Partners",
+      "buyer_type": "claimed_private_real_assets_platform",
+      "size_tier": "founder_led_size_unverified",
+      "county_fips": [
+        "48113"
+      ],
+      "county_fips_semantics": "target intersection for research; exact parcel eligibility unconfirmed",
+      "coverage": {
+        "value": "Dallas/DFW focus; Harris acquisition coverage not established.",
+        "basis": "company_statement",
+        "source_urls": [
+          "https://home.praediacapital.com/"
+        ]
+      },
+      "buy_box": {
+        "property_types": [
+          "single-family",
+          "multifamily",
+          "land",
+          "commercial"
+        ],
+        "condition_and_distress": "Distressed, probate and vacant residential described; budget unknown.",
+        "purchase_price_min": null,
+        "purchase_price_max": null,
+        "price_basis": "not_verified",
+        "target_zip_codes": null,
+        "purchase_cadence": null,
+        "cash_funding_verified": false,
+        "source_urls": [
+          "https://home.praediacapital.com/"
+        ]
+      },
+      "contact_paths": [
+        {
+          "contact_type": "public_web_path",
+          "email": null,
+          "url": "https://home.praediacapital.com/",
+          "role": "public business intake; data procurement authority unverified",
+          "source_url": "https://home.praediacapital.com/",
+          "contacted": false
+        }
+      ],
+      "sourcing_channels": [
+        {
+          "value": "Acquisitions form accepts property owners, brokers, attorneys, lenders and contractors.",
+          "basis": "company_statement",
+          "source_urls": [
+            "https://home.praediacapital.com/"
+          ]
+        }
+      ],
+      "legitimacy_review": {
+        "identity_evidence": {
+          "value": "Website names founder Chris/Onyekachi Agudosi and states founded in 2026; Reg D compliance is self-asserted.",
+          "basis": "company_statement",
+          "source_urls": [
+            "https://home.praediacapital.com/"
+          ]
+        },
+        "license_status": "No matching SEC/state fund/entity registration established; similarly named foreign companies excluded",
+        "reviews_status": {
+          "value": "No attributable independent complaint/closing verification found in targeted search.",
+          "basis": "research_scope_or_unresolved_check",
+          "source_urls": [
+            "https://home.praediacapital.com/"
+          ]
+        }
+      },
+      "risk_flags": [
+        "Reg D wording is not SEC approval or proof of committed capital.",
+        "New platform: validate entity, closings and funding; do not enter investor offering channel."
+      ],
+      "confidence": "unverified",
+      "confidence_scope": "candidate identity and relevance; not funds, title, license clearance, or willingness to buy data",
+      "data_product_fit": {
+        "status": "unverified",
+        "willingness_to_pay": null,
+        "assessment": "Hold pending independent identity and closing evidence; public marketing alone is insufficient to activate a buyer profile.",
+        "basis": "research_inference_from_cited_profile_evidence",
+        "source_urls": [
+          "https://home.praediacapital.com/"
+        ]
+      },
+      "shortlist_for_personal_vetting": false,
+      "review_status": "pending",
+      "outreach_approved": false,
+      "retrieved_at": "2026-09-17",
+      "source_url": "https://home.praediacapital.com/"
+    },
+    {
+      "buyer_id": "kmk",
+      "buyer_name": "KMK Investor Group",
+      "buyer_type": "claimed_principal_cash_and_creative_buyer",
+      "size_tier": "private_size_unverified",
+      "county_fips": [
+        "48113",
+        "48201"
+      ],
+      "county_fips_semantics": "target intersection for research; exact parcel eligibility unconfirmed",
+      "coverage": {
+        "value": "North Dallas and Houston expressly named; not all parcels in either county.",
+        "basis": "company_statement",
+        "source_urls": [
+          "https://kmkinvestorgroup.com/"
+        ]
+      },
+      "buy_box": {
+        "property_types": [
+          "single-family",
+          "2-4 units"
+        ],
+        "condition_and_distress": "Any condition; vacant or occupied; cash, subject-to, seller finance, wrap and hybrid structures.",
+        "purchase_price_min": null,
+        "purchase_price_max": null,
+        "price_basis": "not_verified",
+        "target_zip_codes": null,
+        "purchase_cadence": null,
+        "cash_funding_verified": false,
+        "source_urls": [
+          "https://kmkinvestorgroup.com/"
+        ]
+      },
+      "contact_paths": [
+        {
+          "contact_type": "business_email",
+          "email": "michael@kmkinvestorgroup.com",
+          "url": "https://kmkinvestorgroup.com/",
+          "role": "public business intake; data procurement authority unverified",
+          "source_url": "https://kmkinvestorgroup.com/",
+          "contacted": false
+        }
+      ],
+      "sourcing_channels": [
+        {
+          "value": "Direct seller intake; separate commercial land submission program.",
+          "basis": "company_statement",
+          "source_urls": [
+            "https://kmkinvestorgroup.com/"
+          ]
+        }
+      ],
+      "legitimacy_review": {
+        "identity_evidence": {
+          "value": "Public site states principal buyer and no broker/agent license; legal entity not independently verified.",
+          "basis": "company_statement",
+          "source_urls": [
+            "https://kmkinvestorgroup.com/"
+          ]
+        },
+        "license_status": "Self-described principal; applicable role and legal entity unverified",
+        "reviews_status": {
+          "value": "No attributable independent complaint/closing verification found in targeted search.",
+          "basis": "research_scope_or_unresolved_check",
+          "source_urls": [
+            "https://kmkinvestorgroup.com/"
+          ]
+        }
+      },
+      "risk_flags": [
+        "Creative financing is not confirmed cash capacity and may not resolve tax-suit/title obstacles.",
+        "No negotiation, assignment or finance structuring within this project."
+      ],
+      "confidence": "unverified",
+      "confidence_scope": "candidate identity and relevance; not funds, title, license clearance, or willingness to buy data",
+      "data_product_fit": {
+        "status": "unverified",
+        "willingness_to_pay": null,
+        "assessment": "Hold pending independent identity and closing evidence; public marketing alone is insufficient to activate a buyer profile.",
+        "basis": "research_inference_from_cited_profile_evidence",
+        "source_urls": [
+          "https://kmkinvestorgroup.com/"
+        ]
+      },
+      "shortlist_for_personal_vetting": false,
+      "review_status": "pending",
+      "outreach_approved": false,
+      "retrieved_at": "2026-09-17",
+      "source_url": "https://kmkinvestorgroup.com/"
+    },
+    {
+      "buyer_id": "houston_deal_alert",
+      "buyer_name": "Houston Deal Alert / Home Property Buyers USA",
+      "buyer_type": "deal_distribution_network",
+      "size_tier": "local_size_unverified",
+      "county_fips": [
+        "48201"
+      ],
+      "county_fips_semantics": "target intersection for research; exact parcel eligibility unconfirmed",
+      "coverage": {
+        "value": "Houston/21 ZIP-code coverage claimed; full ZIP list not independently established.",
+        "basis": "company_statement",
+        "source_urls": [
+          "https://houstondealalert.com/"
+        ]
+      },
+      "buy_box": {
+        "property_types": [
+          "investment residential"
+        ],
+        "condition_and_distress": "Distressed/estate inventory advertised; displayed $150K+ is deal range, not a named end buyer budget.",
+        "purchase_price_min": null,
+        "purchase_price_max": null,
+        "price_basis": "not_verified",
+        "target_zip_codes": null,
+        "purchase_cadence": null,
+        "cash_funding_verified": false,
+        "source_urls": [
+          "https://houstondealalert.com/"
+        ]
+      },
+      "contact_paths": [
+        {
+          "contact_type": "business_email",
+          "email": "deals@houstondealalert.com",
+          "url": "https://houstondealalert.com/",
+          "role": "public business intake; data procurement authority unverified",
+          "source_url": "https://houstondealalert.com/",
+          "contacted": false
+        }
+      ],
+      "sourcing_channels": [
+        {
+          "value": "Off-market sourcing and listing-agent relationships; collects buyers' buy boxes.",
+          "basis": "company_statement",
+          "source_urls": [
+            "https://houstondealalert.com/"
+          ]
+        }
+      ],
+      "legitimacy_review": {
+        "identity_evidence": {
+          "value": "Site identifies Home Property Buyers USA as sourcing organization; exact legal entity and closed deals unverified.",
+          "basis": "company_statement",
+          "source_urls": [
+            "https://houstondealalert.com/"
+          ]
+        },
+        "license_status": "Unresolved; do not infer a licensed brokerage from marketing",
+        "reviews_status": {
+          "value": "No independent review clearance.",
+          "basis": "research_scope_or_unresolved_check",
+          "source_urls": [
+            "https://houstondealalert.com/"
+          ]
+        }
+      },
+      "risk_flags": [
+        "Distribution/lead intake channel, not verified end buyer.",
+        "Buyer application and data product overlap could make this a competitor, not a customer."
+      ],
+      "confidence": "unverified",
+      "confidence_scope": "candidate identity and relevance; not funds, title, license clearance, or willingness to buy data",
+      "data_product_fit": {
+        "status": "unverified",
+        "willingness_to_pay": null,
+        "assessment": "Hold pending independent identity and closing evidence; public marketing alone is insufficient to activate a buyer profile.",
+        "basis": "research_inference_from_cited_profile_evidence",
+        "source_urls": [
+          "https://houstondealalert.com/"
+        ]
+      },
+      "shortlist_for_personal_vetting": false,
+      "review_status": "pending",
+      "outreach_approved": false,
+      "retrieved_at": "2026-09-17",
+      "source_url": "https://houstondealalert.com/"
+    },
+    {
+      "buyer_id": "whiterock",
+      "buyer_name": "WhiteRock SFR",
+      "buyer_type": "institutional_acquisition_brokerage",
+      "size_tier": "specialist_private",
+      "county_fips": [
+        "48113",
+        "48201"
+      ],
+      "county_fips_semantics": "target intersection for research; exact parcel eligibility unconfirmed",
+      "coverage": {
+        "value": "DFW and Houston explicitly served.",
+        "basis": "company_statement",
+        "source_urls": [
+          "https://www.whiterocksfr.com/",
+          "https://www.whiterocksfr.com/track-record"
+        ]
+      },
+      "buy_box": {
+        "property_types": [
+          "single-family rental portfolios"
+        ],
+        "condition_and_distress": "Acquisition underwriting, renovation and dispositions; client-specific box unknown.",
+        "purchase_price_min": null,
+        "purchase_price_max": null,
+        "price_basis": "not_verified",
+        "target_zip_codes": null,
+        "purchase_cadence": null,
+        "cash_funding_verified": false,
+        "source_urls": [
+          "https://www.whiterocksfr.com/"
+        ]
+      },
+      "contact_paths": [
+        {
+          "contact_type": "business_email",
+          "email": "contact@whiterocksfr.com",
+          "url": "https://www.whiterocksfr.com/",
+          "role": "public business intake; data procurement authority unverified",
+          "source_url": "https://www.whiterocksfr.com/",
+          "contacted": false
+        }
+      ],
+      "sourcing_channels": [
+        {
+          "value": "Brokerage claims MLS integration, investor network and proprietary matching/data feeds.",
+          "basis": "company_statement",
+          "source_urls": [
+            "https://www.whiterocksfr.com/",
+            "https://www.whiterocksfr.com/track-record"
+          ]
+        }
+      ],
+      "legitimacy_review": {
+        "identity_evidence": {
+          "value": "Company IABS identifies WhiteRock SFR and license 9004839; direct TREC dataset confirms active, expiring 2028-01-31.",
+          "basis": "company_disclosure_and_state_registry",
+          "source_urls": [
+            "https://www.har.com/whiterock-sfr-llc/trec_3w5xKMVATpc%3D",
+            "https://www.whiterocksfr.com/",
+            "https://www.whiterocksfr.com/iabs.pdf"
+          ]
+        },
+        "license_status": "verified_active_in_TREC_public_dataset; applies to named brokerage entity, not every affiliated purchasing LLC",
+        "registry_check_url": "https://data.texas.gov/dataset/Broker-and-Sales-Agent-License-Holder-Information/s7ft-44qi/about_data",
+        "reviews_status": {
+          "value": "No comprehensive complaint clearance; displayed client logos are not independently confirmed mandates.",
+          "basis": "research_scope_or_unresolved_check",
+          "source_urls": [
+            "https://www.har.com/whiterock-sfr-llc/trec_3w5xKMVATpc%3D",
+            "https://www.whiterocksfr.com/",
+            "https://www.whiterocksfr.com/iabs.pdf"
+          ]
+        },
+        "license_records": [
+          {
+            "license_type": "Broker Company",
+            "license_number": "9004839-BB",
+            "full_name": "WHITEROCK SFR LLC",
+            "status": "Active",
+            "license_expiration_date": "01/31/2028",
+            "county": "Collin",
+            "updated": "2026-08-21T06:00:06.000",
+            "source_url": "https://data.texas.gov/resource/s7ft-44qi.json?license_number=9004839-BB",
+            "retrieved_at": "2026-09-17"
+          }
+        ]
+      },
+      "risk_flags": [
+        "Potential data partner and competitor; represents buyers, not proven principal.",
+        "Client-specific mandate and data-only compensation must be established."
+      ],
+      "confidence": "verified",
+      "confidence_scope": "Operating identity, market relevance and named brokerage license; funding, exact buy box, data purchasing and outreach remain unverified.",
+      "data_product_fit": {
+        "status": "unverified",
+        "willingness_to_pay": null,
+        "assessment": "Potential specialized data partner or competitor; current client mandate and value beyond existing data remain unknown.",
+        "basis": "research_inference_from_cited_profile_evidence",
+        "source_urls": [
+          "https://www.whiterocksfr.com/",
+          "https://www.whiterocksfr.com/track-record"
+        ]
+      },
+      "shortlist_for_personal_vetting": true,
+      "review_status": "pending",
+      "outreach_approved": false,
+      "retrieved_at": "2026-09-17",
+      "source_url": "https://www.whiterocksfr.com/"
+    }
+  ]
+}

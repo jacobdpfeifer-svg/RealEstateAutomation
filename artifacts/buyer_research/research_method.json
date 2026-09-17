@@ -1,0 +1,58 @@
+{
+  "retrieved_at": "2026-09-17",
+  "method": "Public web screening plus selected public government corporate-license records; no deed census or buyer communication.",
+  "source_priority": [
+    "Official company market/criteria/contact disclosures for claims about offerings",
+    "TREC public broker-company records and SEC/IAPD for exact named entities",
+    "FTC and government publications for regulatory findings",
+    "BBB complaints and responses for allegations and identity cross-checks",
+    "Anonymous Reddit accounts as unverified diligence leads only"
+  ],
+  "search_families": [
+    "Houston/Harris and Dallas/DFW cash/as-is/tax-delinquent home buyers",
+    "Local private buyers, wholesale brokerages, franchise and brand networks",
+    "iBuyer market availability and current property exclusions",
+    "Institutional SFR holdings, acquisitions, development and sourcing",
+    "Exact company/domain plus BBB complaints/reviews, Reddit, RealBiz",
+    "Exact company/broker-company names in TREC; adviser identity in SEC/IAPD",
+    "Official Harris/Dallas County Clerk recorder access and bulk-data paths"
+  ],
+  "coverage": {
+    "candidate_count": 21,
+    "shortlist_count": 8,
+    "confidence_counts": {
+      "verified": 5,
+      "probable": 11,
+      "unverified": 5
+    },
+    "corporate_trec_records": 7,
+    "brands_with_correlated_active_trec_records": 5,
+    "confirmed_data_customers": 0,
+    "verified_cash_transactions": 0
+  },
+  "limits": [
+    "No exhaustive title/deed census, litigation search, entity registry clearance or proof of funds",
+    "No current ZIP/price/cadence invented from metro language or holdings",
+    "Self-reported claims labeled and confidence scope bounded",
+    "Historical institutional evidence retained as historical, not current mandate",
+    "Targeted RealBiz queries yielded no usable entity-linked review evidence",
+    "No meaningful acquisitions/data-procurement route found for several institutional candidates; generic corporate pages labeled accordingly",
+    "No private marketplace or MLS access; public company descriptions of those sources only"
+  ],
+  "excluded_or_not_merged": [
+    "Unrelated Big State Real Estate Inc in Lubbock not mapped to Big State Home Buyers",
+    "Separate similarly named TX Cash businesses not merged",
+    "Houston House Buyers BBB/domain identity unresolved, candidate held",
+    "Expired/other Opendoor entity records not substituted for active Opendoor Brokerage LLC",
+    "Foreign similarly named Praedia businesses not used as corroboration"
+  ],
+  "actions": {
+    "outreach": 0,
+    "signups": 0,
+    "applications": 0,
+    "paid_requests": 0,
+    "buyer_database_imports": 0,
+    "buyer_modules_written": 0
+  },
+  "review_status": "pending_human_review"
+}

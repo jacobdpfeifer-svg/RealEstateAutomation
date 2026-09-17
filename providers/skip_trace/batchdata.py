@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 from datetime import datetime
 from typing import Any
 
@@ -15,7 +16,7 @@ class BatchDataSkipTraceProvider:
     API_URL = "https://api.batchdata.com/api/v3/property/skip-trace"
 
     def __init__(self, api_key: str | None = None, session=None) -> None:
-        self.api_key = api_key or os.environ.get("BATCHDATA_API_KEY", "")
+        self.api_key = (api_key if api_key is not None else os.environ.get("BATCHDATA_API_KEY", "")).strip()
         if not self.api_key:
             raise RuntimeError(
                 "BATCHDATA_API_KEY not set. Copy config/secrets.env.example to "
@@ -47,13 +48,10 @@ class BatchDataSkipTraceProvider:
             if state:
                 prop_addr["state"] = state
             # Zip may be trailing token in address like "Houston, TX 77002"
-            zip_guess = ""
-            tail = address.rsplit(",", 1)[-1].strip() if address else ""
-            parts = tail.split()
-            if parts and parts[-1].isdigit() and len(parts[-1]) == 5:
-                zip_guess = parts[-1]
-            if zip_guess:
-                prop_addr["zip"] = zip_guess
+            # Require a state/ZIP suffix: a five-digit house number is not a ZIP.
+            zip_match = re.search(r"\b[A-Za-z]{2}\s+(\d{5})(?:-\d{4})?\s*$", address)
+            if zip_match:
+                prop_addr["zip"] = zip_match.group(1)
             req["propertyAddress"] = prop_addr
         return {"requests": [req]}
 
@@ -89,15 +87,11 @@ class BatchDataSkipTraceProvider:
     def _best_phone(person: dict[str, Any]) -> str:
         phones = person.get("phoneNumbers") or person.get("phones") or []
         if isinstance(phones, list) and phones:
-            first = phones[0]
-            if isinstance(first, dict):
-                return str(
-                    first.get("number")
-                    or first.get("phoneNumber")
-                    or first.get("value")
-                    or ""
-                )
-            return str(first)
+            for item in phones:
+                if isinstance(item, dict):
+                    item = item.get("number") or item.get("phoneNumber") or item.get("value")
+                if isinstance(item, str) and item.strip():
+                    return item.strip()
         for key in ("phone", "mobile", "mobilePhone", "landline"):
             if person.get(key):
                 return str(person[key])
@@ -107,11 +101,13 @@ class BatchDataSkipTraceProvider:
     def _best_email(person: dict[str, Any]) -> str:
         emails = person.get("emails") or []
         if isinstance(emails, list) and emails:
-            first = emails[0]
-            if isinstance(first, dict):
-                return str(first.get("email") or first.get("address") or first.get("value") or "")
-            return str(first)
-        return str(person.get("email") or "")
+            for item in emails:
+                if isinstance(item, dict):
+                    item = item.get("email") or item.get("address") or item.get("value")
+                if isinstance(item, str) and item.strip():
+                    return item.strip()
+        value = person.get("email")
+        return value.strip() if isinstance(value, str) else ""
 
     @staticmethod
     def _full_name(person: dict[str, Any], fallback: str) -> str:

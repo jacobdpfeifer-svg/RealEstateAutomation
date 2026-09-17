@@ -201,21 +201,20 @@ class Pipeline:
         parts = best.situs_address.rsplit(",", 2)
         city = parts[-2].strip() if len(parts) >= 2 else ""
         state = cfg.state
-        street = parts[0].strip() if parts else best.situs_address
 
         self._stage = "skip_trace"
         event("skip_trace_attempt", provider=skip.name, case_id=case_id)
         contacts = skip.trace(
             name=best.owner_of_record or defendant_raw,
-            address=street,
+            # The provider separates street and ZIP; preserve the full situs here.
+            address=best.situs_address,
             city=city,
             state=state,
             apn=best.apn,
         )
         contact_id = None
         self._stage = "persist_contact"
-        if contacts:
-            c = contacts[0]
+        for c in contacts:
             c.property_id = prop_id
             cur = self.conn.execute(
                 """
@@ -235,7 +234,9 @@ class Pipeline:
                     c.retrieved_at.isoformat(),
                 ),
             )
-            contact_id = cur.fetchone()["id"]
+            saved_contact_id = cur.fetchone()["id"]
+            if contact_id is None:
+                contact_id = saved_contact_id
 
         status = PipelineStatus.ENRICHED.value
         if multi_hit or entity or low_conf or not contacts:

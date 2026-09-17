@@ -1,0 +1,85 @@
+{
+  "retrieved_at": "2026-09-17",
+  "source_authority": "Texas Real Estate Commission, linked High Value Data Set",
+  "dataset_url": "https://data.texas.gov/dataset/Broker-and-Sales-Agent-License-Holder-Information/s7ft-44qi/about_data",
+  "scope": "Only relevant corporate records retained; no personal contact data. Entity mapping supported by company disclosures; active license is not a funds or transaction guarantee.",
+  "records": [
+    {
+      "license_type": "Broker Company",
+      "license_number": "9004839-BB",
+      "full_name": "WHITEROCK SFR LLC",
+      "status": "Active",
+      "license_expiration_date": "01/31/2028",
+      "county": "Collin",
+      "updated": "2026-08-21T06:00:06.000",
+      "source_url": "https://data.texas.gov/resource/s7ft-44qi.json?license_number=9004839-BB",
+      "retrieved_at": "2026-09-17"
+    },
+    {
+      "license_type": "Broker Company",
+      "license_number": "587060-BB",
+      "full_name": "NETWORTH REALTY OF DALLAS/FORT WORTH LLC",
+      "status": "Active",
+      "license_expiration_date": "06/30/2027",
+      "county": "Dallas",
+      "updated": "2026-08-21T06:00:06.000",
+      "source_url": "https://data.texas.gov/resource/s7ft-44qi.json?license_number=587060-BB",
+      "retrieved_at": "2026-09-17"
+    },
+    {
+      "license_type": "Broker Company",
+      "license_number": "586150-BB",
+      "full_name": "NETWORTH REALTY OF HOUSTON, LLC",
+      "status": "Active",
+      "license_expiration_date": "05/31/2027",
+      "county": "Harris",
+      "updated": "2026-08-29T07:30:01.000",
+      "source_url": "https://data.texas.gov/resource/s7ft-44qi.json?license_number=586150-BB",
+      "retrieved_at": "2026-09-17"
+    },
+    {
+      "license_type": "Broker Company",
+      "license_number": "589457-BB",
+      "full_name": "UNITED INVESTEXUSA, LLC",
+      "status": "Active",
+      "license_expiration_date": "09/30/2027",
+      "county": "Dallas",
+      "updated": "2026-09-02T07:30:01.000",
+      "source_url": "https://data.texas.gov/resource/s7ft-44qi.json?license_number=589457-BB",
+      "retrieved_at": "2026-09-17"
+    },
+    {
+      "license_type": "Broker Company",
+      "license_number": "604727-BB",
+      "full_name": "UNITED INVESTEXUSA 3, LLC",
+      "status": "Active",
+      "license_expiration_date": "05/31/2027",
+      "county": "",
+      "updated": "2026-04-15T11:49:51.000",
+      "source_url": "https://data.texas.gov/resource/s7ft-44qi.json?license_number=604727-BB",
+      "retrieved_at": "2026-09-17"
+    },
+    {
+      "license_type": "Broker Company",
+      "license_number": "9007561-BB",
+      "full_name": "OFFERPAD BROKERAGE, LLC",
+      "status": "Active",
+      "license_expiration_date": "09/30/2028",
+      "county": "Denton",
+      "updated": "2026-09-02T07:30:01.000",
+      "source_url": "https://data.texas.gov/resource/s7ft-44qi.json?license_number=9007561-BB",
+      "retrieved_at": "2026-09-17"
+    },
+    {
+      "license_type": "Broker Company",
+      "license_number": "9008105-BB",
+      "full_name": "OPENDOOR BROKERAGE LLC",
+      "status": "Active",
+      "license_expiration_date": "03/31/2027",
+      "county": "AZ",
+      "updated": "2026-08-29T07:30:01.000",
+      "source_url": "https://data.texas.gov/resource/s7ft-44qi.json?license_number=9008105-BB",
+      "retrieved_at": "2026-09-17"
+    }
+  ]
+}
