@@ -22,6 +22,7 @@ class Pipeline:
         *,
         max_enrich: int | None = None,
         require_enabled: bool = True,
+        append_only: bool = False,
     ) -> None:
         if max_enrich is not None and max_enrich < 0:
             raise ValueError("max_enrich must be nonnegative")
@@ -30,6 +31,8 @@ class Pipeline:
         self.conn = conn
         self.config_path = config_path
         self.require_enabled = require_enabled
+        self.append_only = append_only
+        self._created_case_ids: set[int] = set()
         self.max_attempts = int(os.environ.get("LEADS_MAX_ENRICH_ATTEMPTS", "3"))
         if self.max_attempts < 1:
             raise ValueError("LEADS_MAX_ENRICH_ATTEMPTS must be positive")
@@ -61,7 +64,12 @@ class Pipeline:
                     "retrieved_at": case.retrieved_at.isoformat(),
                     "dedupe_key": case.dedupe_key,
                 },
+                update_existing=not self.append_only,
             )
+            if case_id is None:
+                continue
+            if existing is None:
+                self._created_case_ids.add(case_id)
             db.ensure_lead(self.conn, case_id, PipelineStatus.NEW.value)
             inserted += int(existing is None)
         for log in getattr(clerk, "fetch_logs", []):
@@ -85,6 +93,7 @@ class Pipeline:
             cfg = load_counties(self.config_path)[county_key.lower()]
             query += " AND c.county_fips = ?"
             params = (cfg.fips,)
+        query, params = self._restrict_to_created_cases(query, params)
         query += " ORDER BY l.id"
         rows = self.conn.execute(query, params).fetchall()
         enriched = 0
@@ -252,8 +261,16 @@ class Pipeline:
         )
         return status
 
+    def _restrict_to_created_cases(self, query: str, params: tuple = ()) -> tuple[str, tuple]:
+        if not self.append_only:
+            return query, params
+        if not self._created_case_ids:
+            return query + " AND 1 = 0", params
+        ids = tuple(sorted(self._created_case_ids))
+        return query + " AND c.id IN (" + ",".join("?" for _ in ids) + ")", params + ids
+
     def score(self) -> dict:
-        rows = self.conn.execute(
+        query, params = self._restrict_to_created_cases(
             """
             SELECT l.id, c.filed_date, p.match_confidence, p.tax_delinquent_amt
             FROM lead l
@@ -261,7 +278,8 @@ class Pipeline:
             LEFT JOIN property_record p ON p.id = l.property_id
             WHERE l.pipeline_status IN ('enriched', 'needs_review', 'new')
             """
-        ).fetchall()
+        )
+        rows = self.conn.execute(query, params).fetchall()
         updated = 0
         for row in rows:
             days = max(0, (date.today() - date.fromisoformat(row["filed_date"])).days)

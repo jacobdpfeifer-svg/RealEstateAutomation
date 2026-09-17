@@ -9,7 +9,7 @@ from leads.models import PipelineStatus
 from providers.skip_trace.stub import contact_from_manual
 
 
-def list_review_queue(conn, status: str = "pending") -> list[dict]:
+def _review_status(status: str) -> str | None:
     mapping = {
         "pending": PipelineStatus.NEEDS_REVIEW.value,
         "needs_review": PipelineStatus.NEEDS_REVIEW.value,
@@ -17,9 +17,39 @@ def list_review_queue(conn, status: str = "pending") -> list[dict]:
         "rejected": PipelineStatus.REJECTED.value,
         "all": None,
     }
-    key = mapping.get(status, status)
-    rows = db.list_leads(conn, key)
+    return mapping.get(status, status)
+
+
+def list_review_queue(conn, status: str = "pending") -> list[dict]:
+    rows = db.list_leads(conn, _review_status(status))
     return [dict(r) for r in rows]
+
+
+def review_summary(conn, status: str = "pending") -> dict:
+    """Aggregate in SQL so no identities or arbitrary review notes leave the DB."""
+    reasons = {
+        "no_owner_match": "No owner match",
+        "no_contact": "No contact",
+        "multiple_matches": "Multiple owner matches",
+        "entity_defendant": "Entity defendant",
+        "low_confidence": "Low owner-match confidence",
+    }
+    columns = ", ".join(
+        f"SUM(CASE WHEN l.review_note LIKE ? THEN 1 ELSE 0 END) AS {key}"
+        for key in reasons
+    )
+    params = tuple(f"%{reason}%" for reason in reasons.values())
+    query = (
+        "SELECT c.county_fips, l.pipeline_status, COUNT(*) AS count, " + columns +
+        " FROM lead l JOIN case_record c ON c.id = l.case_id"
+    )
+    key = _review_status(status)
+    if key is not None:
+        query += " WHERE l.pipeline_status = ?"
+        params += (key,)
+    query += " GROUP BY c.county_fips, l.pipeline_status ORDER BY c.county_fips, l.pipeline_status"
+    rows = [dict(row) for row in conn.execute(query, params).fetchall()]
+    return {"rows": sum(row["count"] for row in rows), "counties": rows}
 
 
 def approve_lead(conn, lead_id: int, note: str = "") -> None:

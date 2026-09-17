@@ -98,6 +98,13 @@ Last run (2026-09-15, no API keys): Harris live bulk dry-run found 126 tax suits
 
 ## Daily job
 
+The script runs enabled counties with `--max-enrich 5 --append-only`: the cap is
+shared across counties, and existing leads are not resumed. Run it only after
+completing the [operator handoff](docs/OPERATOR_COMPLETION_PROMPT.md). An attempt
+cap is not a dollar ceiling; paid use requires a separately approved spending
+ceiling and verified vendor costs/limits. This repository does not enforce a
+cross-run dollar budget. No scheduler is installed by this script.
+
 ```bash
 chmod +x scripts/run_daily.sh
 ./scripts/run_daily.sh
@@ -118,7 +125,8 @@ Research, rationale, and deferred decisions: [2026 reliability review](docs/RELI
 - `run` / `pipeline enrich-pending` return exit status 1 on processing failures.
   `run` commits ingest and each completed lead so the next invocation can resume.
   Local pipeline commands share a nonblocking file lock; the kernel releases it
-  after a crash. This is not a distributed PostgreSQL lock.
+  after a crash. Postgres sessions additionally coordinate through a database
+  advisory lock across updated checkouts/hosts (details below).
 - Errors retry on later runs, up to `LEADS_MAX_ENRICH_ATTEMPTS` (default 3), then
   enter `dead_letter`. No owner/contact results go to human review with a reason.
 - `--dry-run` uses an in-memory DB and does not open the target DB. It still fetches
@@ -157,11 +165,41 @@ Deferred rows remain pending for a later command. Each lead calls skip trace at
 most once per attempt. A new invocation has a new cap; include reruns in your
 spending ceiling. `validate` defaults to a cap of 5.
 
+For a production run that must preserve every existing row, add `run --append-only`.
+Duplicate cases retain their stored fields, and enrichment/scoring only touch
+cases inserted by that invocation. Existing pending/error leads stay untouched;
+even new leads deferred by the cap require a separately authorized normal resume
+command later. This flag does not change the configured database or enrichment cap.
+
 ```bash
 DALLAS_CLERK_LIVE_ENABLED=0 LEADS_SAVE_RAW=0 .venv/bin/python3 -m leads run --county harris --since 7d --max-enrich 5 --db artifacts/runtime/test_leads.db
 .venv/bin/python3 -m leads state --db artifacts/runtime/test_leads.db
 ```
 
 `--db` works before or after subcommands. Explicit scratch paths override
-`DATABASE_URL`. The daily script has no cap or scratch override and is a production
-entry point; do not schedule it before accepting the runtime readiness report.
+`DATABASE_URL`. The daily script caps attempts at five and uses append-only mode;
+it has no scratch override and is a production entry point. Do not schedule it
+before completing the operator handoff and accepting production readiness.
+
+### Database coordination and private review summaries
+
+Postgres application sessions acquire a database advisory lock before migrations
+or work. This coordinates updated checkouts/hosts sharing the same database and
+holds through incremental commits; connection close releases it. A competing
+command exits 1 with a retry message. All `db_session` callers participate,
+including state/review/export commands because they currently initialize schema.
+Older versions, external SQL clients, and code using bare `connect()` do not
+participate: identify and coordinate those writers before scheduling. SQLite
+pipeline runs retain their local file lock.
+
+For routine reports without owner names, addresses, contacts or free-form notes:
+
+```bash
+.venv/bin/python3 -m leads review summary --status pending
+.venv/bin/python3 -m leads review summary --status new
+.venv/bin/python3 -m leads review summary --status dead_letter
+```
+
+`summary` aggregates by county/status and known reason categories inside the
+database. Reasons can overlap; a zero reason count does not certify a lead.
+`review list` still exposes detailed records for authorized local human review.

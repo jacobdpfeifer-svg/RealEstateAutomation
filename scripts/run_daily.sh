@@ -10,4 +10,4 @@ PYTHON="${LEADS_PYTHON:-$ROOT/.venv/bin/python3}"
 [ -x "$PYTHON" ] || PYTHON="python3"
 
 # run already enriches and scores; repeating them retries paid failures twice.
-exec "$PYTHON" -m leads run --all-enabled --since 7d
+exec "$PYTHON" -m leads run --all-enabled --since 7d --max-enrich 5 --append-only

@@ -10,6 +10,12 @@ from typing import Any, Generator, Iterable, Optional, Union
 
 DEFAULT_DB = Path(__file__).resolve().parent.parent / "leads.db"
 SCHEMA_VERSION = 1
+# Stable across checkouts/hosts; PostgreSQL scopes advisory locks per database.
+_PG_SESSION_LOCK = 0x5245544C45414453
+
+
+class DatabaseBusyError(RuntimeError):
+    """Another cooperating application session is using the database."""
 
 # Backing store is chosen at connect() time via DATABASE_URL. Unset (or
 # sqlite:// / a bare path) keeps the original local-file SQLite behavior;
@@ -263,7 +269,7 @@ def pipeline_lock(db_path: Path | str, *, disabled: bool = False):
         try:
             fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
-            raise RuntimeError("A pipeline process already holds this database's lock") from None
+            raise DatabaseBusyError("A pipeline process already holds this database's lock; retry after it finishes") from None
         yield
     finally:
         os.close(fd)
@@ -273,6 +279,18 @@ def pipeline_lock(db_path: Path | str, *, disabled: bool = False):
 def db_session(db_path: Path | str | None = None) -> Generator[Connection, None, None]:
     conn = connect(db_path)
     try:
+        if isinstance(conn, PGConnection):
+            # Session-level, not transaction-level: ingest/enrichment commit
+            # incrementally. Closing this connection releases the lock even
+            # after a rollback or exception. Acquire before migration writes.
+            acquired = conn.execute(
+                "SELECT pg_try_advisory_lock(?) AS acquired", (_PG_SESSION_LOCK,)
+            ).fetchone()["acquired"]
+            if not acquired:
+                raise DatabaseBusyError(
+                    "Another re-tax-leads session is already using this database; "
+                    "retry after it finishes"
+                )
         migrate(conn)
         yield conn
         conn.commit()
@@ -302,8 +320,13 @@ def log_fetch(
     )
 
 
-def upsert_case(conn: sqlite3.Connection, row: dict[str, Any]) -> int:
-    conn.execute(
+def upsert_case(
+    conn: sqlite3.Connection, row: dict[str, Any], *, update_existing: bool = True
+) -> int | None:
+    # DO NOTHING + RETURNING identifies inserts atomically, including conflicts
+    # from another writer. Append-only callers must not claim an existing case.
+    conflict = "DO UPDATE SET status = excluded.status, retrieved_at = excluded.retrieved_at" if update_existing else "DO NOTHING"
+    cur = conn.execute(
         """
         INSERT INTO case_record (
             county_fips, case_number, plaintiff, defendant_raw, defendant_normalized,
@@ -312,14 +335,12 @@ def upsert_case(conn: sqlite3.Connection, row: dict[str, Any]) -> int:
             :county_fips, :case_number, :plaintiff, :defendant_raw, :defendant_normalized,
             :case_type, :filed_date, :status, :source_url, :retrieved_at, :dedupe_key
         )
-        ON CONFLICT(dedupe_key) DO UPDATE SET
-            status = excluded.status,
-            retrieved_at = excluded.retrieved_at
-        """,
+        ON CONFLICT(dedupe_key)
+        """ + conflict + " RETURNING id",
         row,
     )
-    cur = conn.execute("SELECT id FROM case_record WHERE dedupe_key = ?", (row["dedupe_key"],))
-    return int(cur.fetchone()["id"])
+    result = cur.fetchone()
+    return int(result["id"]) if result else None
 
 
 def ensure_lead(conn: sqlite3.Connection, case_id: int, status: str = "new") -> int:

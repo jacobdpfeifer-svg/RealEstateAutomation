@@ -19,6 +19,7 @@ from leads.review import (
     approve_lead,
     export_csv,
     list_review_queue,
+    review_summary,
     paste_contact,
     reject_lead,
     retry_lead,
@@ -89,6 +90,7 @@ def cmd_run(args: argparse.Namespace) -> int:
             conn,
             max_enrich=args.max_enrich,
             require_enabled=not allow_disabled,
+            append_only=args.append_only,
         )
         for county in counties:
             started = time.monotonic()
@@ -126,7 +128,9 @@ def cmd_pipeline(args: argparse.Namespace) -> int:
 def cmd_review(args: argparse.Namespace) -> int:
     with db.db_session(args.db) as conn:
         try:
-            if args.review_cmd == "list":
+            if args.review_cmd == "summary":
+                print(json.dumps(review_summary(conn, args.status), indent=2))
+            elif args.review_cmd == "list":
                 rows = list_review_queue(conn, args.status)
                 print(json.dumps(rows, indent=2, default=str))
             elif args.review_cmd == "approve":
@@ -268,6 +272,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_run.add_argument("--all-enabled", action="store_true")
     p_run.add_argument("--since", default="7d", help="Lookback e.g. 7d, 30d")
     p_run.add_argument("--dry-run", action="store_true")
+    p_run.add_argument("--append-only", action="store_true",
+                       help="Preserve existing rows; enrich/score only cases inserted by this invocation")
     p_run.add_argument("--max-enrich", type=nonnegative_int, default=None,
                        help="Maximum enrichment attempts across all selected counties; 0 = ingest only")
     p_run.add_argument(
@@ -289,6 +295,10 @@ def build_parser() -> argparse.ArgumentParser:
     p_list = review_sub.add_parser("list", help="List leads by status")
     p_list.add_argument("--status", default="pending")
     p_list.set_defaults(func=cmd_review)
+
+    p_summary = review_sub.add_parser("summary", help="Aggregate counts and reason categories without personal fields")
+    p_summary.add_argument("--status", default="pending")
+    p_summary.set_defaults(func=cmd_review)
 
     for action in ("approve", "reject", "skip", "retry"):
         p = review_sub.add_parser(action)
@@ -379,7 +389,11 @@ def main(argv: list[str] | None = None) -> int:
     os.umask(0o077)
     load_secrets()
     configure_logging()
-    return args.func(args)
+    try:
+        return args.func(args)
+    except db.DatabaseBusyError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":
