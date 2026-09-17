@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any, Generator, Iterable, Optional, Union
 
 DEFAULT_DB = Path(__file__).resolve().parent.parent / "leads.db"
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 # Stable across checkouts/hosts; PostgreSQL scopes advisory locks per database.
 _PG_SESSION_LOCK = 0x5245544C45414453
 
@@ -182,12 +182,70 @@ CREATE TABLE IF NOT EXISTS outcome_event (
     occurred_at TEXT NOT NULL
 );
 
+-- The Gmail-draft outreach subsystem promised above (leads/outreach.py,
+-- leads/compliance.py): one row per drafted email, never a sent email —
+-- actual Gmail draft creation happens outside this DB and reports its
+-- gmail_draft_id back via update_email_draft_status.
+CREATE TABLE IF NOT EXISTS email_draft (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    lead_id INTEGER NOT NULL REFERENCES lead(id),
+    case_id INTEGER NOT NULL REFERENCES case_record(id),
+    to_email TEXT NOT NULL,
+    to_name TEXT NOT NULL DEFAULT '',
+    subject TEXT NOT NULL,
+    body TEXT NOT NULL,
+    template_version TEXT NOT NULL DEFAULT '',
+    status TEXT NOT NULL DEFAULT 'queued',
+    gmail_draft_id TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL,
+    synced_at TEXT NOT NULL DEFAULT ''
+);
+
+-- CAN-SPAM/opt-out suppression list. Checked before any draft is ever built
+-- for a given address, not just before a send.
+CREATE TABLE IF NOT EXISTS suppression (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT NOT NULL UNIQUE,
+    reason TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL
+);
+
 CREATE INDEX IF NOT EXISTS idx_case_county ON case_record(county_fips);
 CREATE INDEX IF NOT EXISTS idx_lead_status ON lead(pipeline_status);
 CREATE INDEX IF NOT EXISTS idx_property_case ON property_record(case_id);
 CREATE INDEX IF NOT EXISTS idx_outcome_entity ON outcome_event(entity_type, entity_id);
 CREATE INDEX IF NOT EXISTS idx_outcome_event_type ON outcome_event(event_type);
 CREATE INDEX IF NOT EXISTS idx_outcome_template ON outcome_event(template_version);
+CREATE INDEX IF NOT EXISTS idx_email_draft_lead ON email_draft(lead_id);
+CREATE INDEX IF NOT EXISTS idx_email_draft_status ON email_draft(status);
+"""
+
+# sqlite migration from schema version 1 (before email_draft/suppression existed).
+_V1_TO_V2_SQLITE = """
+CREATE TABLE IF NOT EXISTS email_draft (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    lead_id INTEGER NOT NULL REFERENCES lead(id),
+    case_id INTEGER NOT NULL REFERENCES case_record(id),
+    to_email TEXT NOT NULL,
+    to_name TEXT NOT NULL DEFAULT '',
+    subject TEXT NOT NULL,
+    body TEXT NOT NULL,
+    template_version TEXT NOT NULL DEFAULT '',
+    status TEXT NOT NULL DEFAULT 'queued',
+    gmail_draft_id TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL,
+    synced_at TEXT NOT NULL DEFAULT ''
+);
+
+CREATE TABLE IF NOT EXISTS suppression (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT NOT NULL UNIQUE,
+    reason TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_email_draft_lead ON email_draft(lead_id);
+CREATE INDEX IF NOT EXISTS idx_email_draft_status ON email_draft(status);
 """
 
 # Same tables for Postgres: SERIAL replaces INTEGER PRIMARY KEY AUTOINCREMENT;
@@ -236,7 +294,15 @@ def migrate(conn: Connection) -> None:
             _ensure_column(conn, "property_record", "property_type", "TEXT NOT NULL DEFAULT ''")
             _ensure_column(conn, "property_record", "total_value", "REAL")
             _ensure_column(conn, "lead", "enrichment_attempts", "INTEGER NOT NULL DEFAULT 0")
-            conn.execute("PRAGMA user_version = 1")
+            conn.execute("PRAGMA user_version = 2")
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+    elif version == 1:
+        try:
+            conn.executescript("BEGIN IMMEDIATE;\n" + _V1_TO_V2_SQLITE)
+            conn.execute("PRAGMA user_version = 2")
             conn.commit()
         except Exception:
             conn.rollback()
@@ -391,8 +457,9 @@ def list_leads(conn: sqlite3.Connection, status: str | None = None) -> Iterable[
     if status:
         return conn.execute(
             """
-            SELECT l.*, c.case_number, c.defendant_raw, c.plaintiff, c.filed_date,
+            SELECT l.*, c.county_fips, c.case_number, c.defendant_raw, c.plaintiff, c.filed_date,
                    p.situs_address, p.apn, p.match_confidence, p.property_type, p.total_value,
+                   p.tax_delinquent_amt, p.years_delinquent,
                    ct.phone, ct.email, ct.name AS contact_name
             FROM lead l
             JOIN case_record c ON c.id = l.case_id
@@ -405,8 +472,9 @@ def list_leads(conn: sqlite3.Connection, status: str | None = None) -> Iterable[
         ).fetchall()
     return conn.execute(
         """
-            SELECT l.*, c.case_number, c.defendant_raw, c.plaintiff, c.filed_date,
+            SELECT l.*, c.county_fips, c.case_number, c.defendant_raw, c.plaintiff, c.filed_date,
                    p.situs_address, p.apn, p.match_confidence, p.property_type, p.total_value,
+                   p.tax_delinquent_amt, p.years_delinquent,
                    ct.phone, ct.email, ct.name AS contact_name
             FROM lead l
             JOIN case_record c ON c.id = l.case_id
@@ -471,6 +539,80 @@ def outcome_events(
         query += " WHERE " + " AND ".join(clauses)
     query += " ORDER BY id"
     return conn.execute(query, params).fetchall()
+
+
+def insert_email_draft(
+    conn: sqlite3.Connection,
+    *,
+    lead_id: int,
+    case_id: int,
+    to_email: str,
+    to_name: str,
+    subject: str,
+    body: str,
+    template_version: str,
+) -> int:
+    cur = conn.execute(
+        """
+        INSERT INTO email_draft (
+            lead_id, case_id, to_email, to_name, subject, body, template_version, status, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, 'queued', ?)
+        RETURNING id
+        """,
+        (lead_id, case_id, to_email, to_name, subject, body, template_version, datetime.utcnow().isoformat()),
+    )
+    return int(cur.fetchone()["id"])
+
+
+def update_email_draft_status(
+    conn: sqlite3.Connection, draft_id: int, status: str, *, gmail_draft_id: str = ""
+) -> None:
+    cursor = conn.execute(
+        """
+        UPDATE email_draft SET status = ?, gmail_draft_id = ?, synced_at = ?
+        WHERE id = ?
+        """,
+        (status, gmail_draft_id, datetime.utcnow().isoformat(), draft_id),
+    )
+    if cursor.rowcount != 1:
+        raise ValueError(f"Draft not found: {draft_id}")
+
+
+def list_email_drafts(conn: sqlite3.Connection, status: str | None = None) -> list[sqlite3.Row]:
+    if status:
+        return conn.execute(
+            "SELECT * FROM email_draft WHERE status = ? ORDER BY id", (status,)
+        ).fetchall()
+    return conn.execute("SELECT * FROM email_draft ORDER BY id").fetchall()
+
+
+def has_active_draft(conn: sqlite3.Connection, lead_id: int) -> bool:
+    row = conn.execute(
+        "SELECT 1 FROM email_draft WHERE lead_id = ? AND status != 'cancelled' LIMIT 1",
+        (lead_id,),
+    ).fetchone()
+    return row is not None
+
+
+def add_suppression(conn: sqlite3.Connection, email: str, reason: str = "") -> int:
+    cur = conn.execute(
+        """
+        INSERT INTO suppression (email, reason, created_at) VALUES (?, ?, ?)
+        ON CONFLICT(email) DO UPDATE SET reason = excluded.reason
+        RETURNING id
+        """,
+        (email.strip().lower(), reason, datetime.utcnow().isoformat()),
+    )
+    return int(cur.fetchone()["id"])
+
+
+def is_suppressed(conn: sqlite3.Connection, email: str) -> bool:
+    if not email:
+        return False
+    row = conn.execute(
+        "SELECT 1 FROM suppression WHERE email = ?", (email.strip().lower(),)
+    ).fetchone()
+    return row is not None
 
 
 def outcome_summary(conn: sqlite3.Connection) -> list[dict[str, Any]]:

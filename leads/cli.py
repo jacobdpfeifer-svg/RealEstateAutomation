@@ -10,7 +10,8 @@ from datetime import date, timedelta
 from pathlib import Path
 
 from adapters.registry import list_enabled_counties
-from leads import db, ledger
+from leads import db, ledger, outreach
+from leads.compliance import SenderConfigMissing
 from leads.pipeline import Pipeline
 from leads.http import safe_error
 from leads.observability import configure_logging, event
@@ -205,6 +206,37 @@ def cmd_ledger(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_outreach(args: argparse.Namespace) -> int:
+    with db.db_session(args.db) as conn:
+        try:
+            if args.outreach_cmd == "queue":
+                result = outreach.queue_ready_leads(
+                    conn,
+                    county_fips=args.county_fips,
+                    override_high_risk_state=args.override_high_risk_state,
+                )
+                print(json.dumps(result, indent=2))
+            elif args.outreach_cmd == "list":
+                rows = outreach.list_digest(conn, args.status)
+                print(json.dumps(rows, indent=2, default=str))
+            elif args.outreach_cmd == "mark-drafted":
+                outreach.mark_drafted(conn, args.draft_id, args.gmail_draft_id)
+                print(f"Marked draft {args.draft_id} as drafted_in_gmail ({args.gmail_draft_id})")
+            elif args.outreach_cmd == "opt-out":
+                suppression_id = outreach.record_opt_out(conn, args.email, args.note or "")
+                print(f"Suppressed {args.email} (suppression {suppression_id})")
+            else:
+                print(f"Unknown outreach command: {args.outreach_cmd}", file=sys.stderr)
+                return 2
+        except SenderConfigMissing as exc:
+            print(f"Error: {exc}", file=sys.stderr)
+            return 1
+        except ValueError as exc:
+            print(f"Error: {exc}", file=sys.stderr)
+            return 1
+    return 0
+
+
 def cmd_validate(args: argparse.Namespace) -> int:
     root = _project_root()
     default_db = str(root / "leads.db")
@@ -348,6 +380,37 @@ def build_parser() -> argparse.ArgumentParser:
     p_ledger_history.add_argument("--entity-type", dest="entity_type", default=None)
     p_ledger_history.add_argument("--entity-id", dest="entity_id", type=int, default=None)
     p_ledger_history.set_defaults(func=cmd_ledger)
+
+    p_outreach = sub.add_parser(
+        "outreach",
+        help="Draft (never send) outreach email for approved leads; Gmail creation happens outside this process",
+    )
+    outreach_sub = p_outreach.add_subparsers(dest="outreach_cmd", required=True)
+
+    p_outreach_queue = outreach_sub.add_parser("queue", help="Render + store drafts for eligible approved leads")
+    p_outreach_queue.add_argument("--county-fips", default=None, help="Limit to one county, e.g. 48201")
+    p_outreach_queue.add_argument(
+        "--override-high-risk-state",
+        action="store_true",
+        help="Draft anyway in a state flagged for wholesaling/broker-rule re-verification (§6)",
+    )
+    p_outreach_queue.set_defaults(func=cmd_outreach)
+
+    p_outreach_list = outreach_sub.add_parser("list", help="List drafts (default: queued, not yet in Gmail)")
+    p_outreach_list.add_argument("--status", default="queued")
+    p_outreach_list.set_defaults(func=cmd_outreach)
+
+    p_outreach_mark = outreach_sub.add_parser(
+        "mark-drafted", help="Record that a queued row now has a real Gmail draft"
+    )
+    p_outreach_mark.add_argument("draft_id", type=int)
+    p_outreach_mark.add_argument("--gmail-draft-id", required=True)
+    p_outreach_mark.set_defaults(func=cmd_outreach)
+
+    p_outreach_optout = outreach_sub.add_parser("opt-out", help="Suppress an address from future drafts")
+    p_outreach_optout.add_argument("email")
+    p_outreach_optout.add_argument("--note", default="")
+    p_outreach_optout.set_defaults(func=cmd_outreach)
 
     p_validate = sub.add_parser(
         "validate",

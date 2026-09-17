@@ -66,6 +66,14 @@ python3 -m leads review paste 2 --name "Jane Doe" --phone "7135550100"
 
 # Export approved leads for dialer/CRM
 python3 -m leads export --status approved -o exports/approved.csv
+
+# Outreach: draft (never send) email for approved leads with a contact email.
+# Requires OUTREACH_SENDER_NAME/ADDRESS/FROM_EMAIL in config/secrets.env (CAN-SPAM).
+# See docs/OUTREACH_HANDOFF.md for the queue -> Gmail draft -> human-send loop.
+python3 -m leads outreach queue
+python3 -m leads outreach list --status queued
+python3 -m leads outreach mark-drafted 1 --gmail-draft-id r-abc123
+python3 -m leads outreach opt-out someone@example.com --note "asked to stop"
 ```
 
 ## Architecture
