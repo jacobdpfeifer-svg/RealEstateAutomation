@@ -52,7 +52,7 @@
         "portal_scrape"
       ],
       "tax_lookup": [
-        "api"
+        "arcgis_rest"
       ]
     }
   ],
@@ -75,10 +75,58 @@
         "status_code": 200
       },
       "tax": {
-        "method": "bulk_dataset",
-        "subtype": "gis_download",
-        "url": "https://www.tad.org/resources/data-downloads",
-        "final_url": "https://www.tad.org/resources/data-downloads",
+        "method": "api",
+        "subtype": "arcgis_rest",
+        "layer": "Parcel",
+        "field_count": 56,
+        "fields": [
+          "OBJECTID",
+          "TAXPIN",
+          "ACCOUNT",
+          "OWNER_NAME",
+          "OWNER_ADDR",
+          "OWNER_CITY",
+          "OWNER_ZIP",
+          "OWNER_ZIP_",
+          "SITUS_ADDR",
+          "TAD_MAP",
+          "MAPSCO",
+          "EXEMPTION_",
+          "LEGAL_1",
+          "LEGAL_2",
+          "LEGAL_3",
+          "LEGAL_4",
+          "SCHOOL",
+          "CITY",
+          "ZIPCODE",
+          "STATE",
+          "SPEC1",
+          "SPEC2",
+          "SPEC3",
+          "SPEC4",
+          "SPEC5",
+          "DEED_DATE",
+          "DEED_BOOK",
+          "DEED_PAGE",
+          "GARAGE_CAP",
+          "BEDROOMS",
+          "BATHROOMS",
+          "YEAR_BUILT",
+          "LIVING_ARE",
+          "SW_POOL",
+          "LAND_ACRES",
+          "LAND_SQFT",
+          "CENTRAL_HE",
+          "CENTRAL_AI",
+          "APPRAISAL_",
+          "APPRAISEDV"
+        ],
+        "owner_field": "OWNER_NAME",
+        "apn_field": "ACCOUNT",
+        "value_field": "LAND_VALUE",
+        "type_field": "",
+        "url": "https://mapit.tarrantcounty.com/arcgis/rest/services/Dynamic/TADParcels/FeatureServer/0?f=json",
+        "final_url": "https://mapit.tarrantcounty.com/arcgis/rest/services/Dynamic/TADParcels/FeatureServer/0?f=json",
         "status_code": 200
       },
       "clerk_candidates": [
@@ -221,7 +269,7 @@
           "portal_scrape"
         ],
         "tax_lookup": [
-          "bulk_dataset"
+          "arcgis_rest"
         ],
         "note": "Do not write a portal scraper until bulk/API has been ruled out. Adapters are not registered until a probe-only county is promoted."
       }
@@ -232,13 +280,13 @@
       "fips": "48029",
       "state": "TX",
       "clerk": {
-        "method": "bulk_dataset",
-        "subtype": "clerk_bulk",
+        "method": "portal_scrape",
+        "subtype": "odyssey",
+        "recaptcha_required": false,
+        "smart_search": true,
         "url": "https://portal-txbexar.tylertech.cloud/Portal/",
         "final_url": "https://portal-txbexar.tylertech.cloud/Portal/",
-        "status_code": 200,
-        "daily_summaries_available": 0,
-        "latest_summary": null
+        "status_code": 200
       },
       "tax": {
         "method": "api",
@@ -296,13 +344,13 @@
       },
       "clerk_candidates": [
         {
-          "method": "bulk_dataset",
-          "subtype": "clerk_bulk",
+          "method": "portal_scrape",
+          "subtype": "odyssey",
+          "recaptcha_required": false,
+          "smart_search": true,
           "url": "https://portal-txbexar.tylertech.cloud/Portal/",
           "final_url": "https://portal-txbexar.tylertech.cloud/Portal/",
-          "status_code": 200,
-          "daily_summaries_available": 0,
-          "latest_summary": null
+          "status_code": 200
         },
         {
           "method": "unknown",
@@ -370,7 +418,7 @@
       ],
       "recommended": {
         "ingest": [
-          "bulk_dataset"
+          "portal_scrape"
         ],
         "tax_lookup": [
           "arcgis_rest"

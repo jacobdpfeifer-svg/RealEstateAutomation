@@ -20,6 +20,8 @@ clerk_bulk_url = "https://www.hcdistrictclerk.com/common/e-services/PublicDatase
 arcgis_url = "https://www.gis.hctx.net/arcgis/rest/services/HCAD/Parcels/MapServer/0"
 owner_field = "owner_name_1"
 apn_field = "HCAD_NUM"
+value_field = "total_market_val"
+type_field = "parcel_type"
 
 [[county]]
 fips = "48113"
@@ -57,13 +59,22 @@ case_type_filter = ["Tax", "Delinquent"]
 ingest = ["portal_scrape"]
 tax_lookup = ["arcgis_rest"]
 skip_trace = ["batchdata"]
+tax_adapter = "adapters.tx.tarrant_tax.TarrantTaxAdapter"
 clerk_portal_url = "https://portal-txtarrant.tylertech.cloud/PublicAccess/default.aspx"
 arcgis_url = "https://mapit.tarrantcounty.com/arcgis/rest/services/Dynamic/TADParcels/FeatureServer/0"
 owner_field = "OWNER_NAME"
 apn_field = "ACCOUNT"
-# Live probe 2026-09-15: clerk is Tyler Odyssey PublicAccess (portal_scrape; no public bulk).
-# Tax: queryable TAD ArcGIS REST (preferred). TAD also offers GIS shapefile zips at
-# https://www.tad.org/resources/data-downloads — bulk GIS, not live owner search.
+value_field = "TOTAL_VALU"
+type_field = "PARCELTYPE"
+address_fields = ["SITUS_ADDR", "CITY", "ZIPCODE"]
+# TAD property pages are JS-rendered; this is an account search deep-link, not a static parcel HTML page.
+assessor_url_template = "https://www.tad.org/search-results?query={apn}"
+situs_state = "TX"
+# Live probe 2026-09-16: clerk is Tyler Odyssey PublicAccess (portal_scrape; no public bulk).
+# Tax: queryable TAD ArcGIS REST (preferred). Probe's LAND_VALUE guess is land-only;
+# TOTAL_VALU / PARCELTYPE sit past the probe's 40-field truncate. TAD also offers GIS
+# shapefile zips at https://www.tad.org/resources/data-downloads — bulk GIS, not live owner search.
+# Clerk adapter not registered: PublicAccess is County Clerk (probate/JP/CCL), not District Civil Tax.
 
 [[county]]
 fips = "48029"
@@ -76,31 +87,53 @@ case_type_filter = ["Tax", "Delinquent"]
 ingest = ["portal_scrape"]
 tax_lookup = ["arcgis_rest"]
 skip_trace = ["batchdata"]
+tax_adapter = "adapters.tx.bexar_tax.BexarTaxAdapter"
+clerk_adapter = "adapters.tx.bexar_clerk.BexarClerkAdapter"
 clerk_portal_url = "https://portal-txbexar.tylertech.cloud/Portal/"
+odyssey_dashboard_path = "/Home/Dashboard/29"
+odyssey_search_path = "/SmartSearch/SmartSearch/SmartSearch"
+# Dashboard GET returned HTTP 405; warmup the portal root instead. recaptcha_required is
+# landing-page evidence only — unverified on an actual submitted search.
+odyssey_warmup_path = "/"
+odyssey_recaptcha_required = false
 arcgis_url = "https://maps.bexar.org/arcgis/rest/services/Parcels/MapServer/0"
 owner_field = "Owner"
 apn_field = "AcctNumb"
-# Live probe 2026-09-15: clerk is Tyler Odyssey cloud portal (portal_scrape; no bulk
+value_field = "TotVal"
+type_field = "State_cd"
+address_fields = ["Situs"]
+assessor_url_template = "https://esearch.bcad.org/Property/?searchText={apn}"
+situs_state = "TX"
+# Live probe 2026-09-16: clerk is Tyler Odyssey Smart Search (portal_scrape; no bulk
 # civil summaries). Tax: BCAD Parcels MapServer (Owner, AcctNumb, TotVal, State_cd).
+# Probe guessed apn_field=PropID; AcctNumb is the BCAD account used for owner lookup.
 
 [[county]]
 fips = "04013"
 name = "Maricopa"
 state = "AZ"
 enabled = false
-plaintiff = "MARICOPA COUNTY"
-plaintiff_terms = ["MARICOPA COUNTY", "COUNTY OF MARICOPA"]
-case_type_filter = ["Tax", "Delinquent"]
+# No county-plaintiff tax-suit ingest. Empty terms so plaintiff_is_tax_suit's COUNTY
+# shortcut cannot swallow unrelated litigation. See artifacts/runtime/PHASE3_MARICOPA_MODEL.md.
+plaintiff = ""
+plaintiff_terms = []
+case_type_filter = []
 ingest = ["portal_scrape"]
 tax_lookup = ["arcgis_rest"]
 skip_trace = ["batchdata"]
+tax_adapter = "adapters.az.maricopa_tax.MaricopaTaxAdapter"
 clerk_portal_url = "https://www.superiorcourt.maricopa.gov/docket/civilcourtcases/casesearch.asp"
 assessor_search_url = "https://mcassessor.maricopa.gov/search/property/"
 arcgis_url = "https://gis.mcassessor.maricopa.gov/arcgis/rest/services/Parcels/MapServer/0"
 owner_field = "OWNER_NAME"
 apn_field = "APN"
-# Live probe 2026-09-15: civil docket is HTML search (bulk needs AZ Rule 123 request).
+value_field = "FCV_CUR"
+address_fields = ["PHYSICAL_ADDRESS"]
+assessor_url_template = "https://mcassessor.maricopa.gov/mcs/?q={apn}"
+situs_state = "AZ"
+# Live probe 2026-09-16: civil docket is HTML search (bulk needs AZ Rule 123 request).
 # Assessor JSON search (/search/property/?q=) returned HTTP 500; ArcGIS parcels layer
-# is live (OWNER_NAME, APN). Do not write a clerk portal scraper until bulk is ruled out
-# via a formal bulk-data request.
+# is live (OWNER_NAME, APN, FCV_CUR). Parcel layer has no delinquent/lien flag.
+# Clerk tax-suit model does not apply: CP holders (not the county) file foreclosure
+# actions; treasurer is typically a defendant. See artifacts/runtime/PHASE3_MARICOPA_MODEL.md.
 

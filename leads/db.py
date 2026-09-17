@@ -26,6 +26,11 @@ def _is_postgres_url(url: str) -> bool:
     return url.startswith(_PG_SCHEMES)
 
 
+def default_backend_name() -> str:
+    """Backend the default leads.db path would use. Never returns the DSN."""
+    return "postgres" if _is_postgres_url(_database_url()) else "sqlite"
+
+
 _NAMED_PARAM_RE = re.compile(r":(\w+)")
 
 
@@ -69,6 +74,11 @@ class PGConnection:
 
 
 Connection = Union[sqlite3.Connection, PGConnection]
+
+
+def backend_name(conn: Connection) -> str:
+    """Connected backend label for CLI/preflight. Never returns the DSN."""
+    return "postgres" if isinstance(conn, PGConnection) else "sqlite"
 
 SCHEMA_SQLITE = """
 CREATE TABLE IF NOT EXISTS case_record (

@@ -1,0 +1,17 @@
+{
+  "displayFieldName": "OWNER_NAME",
+  "features": [
+    {
+      "attributes": {
+        "ACCOUNT": "01234567",
+        "OWNER_NAME": "WILLIAMS JOHN",
+        "SITUS_ADDR": "200 OAK ST",
+        "CITY": "FORT WORTH",
+        "ZIPCODE": "76102",
+        "TOTAL_VALU": 180000,
+        "PARCELTYPE": "RESIDENTIAL",
+        "LAND_VALUE": 40000
+      }
+    }
+  ]
+}

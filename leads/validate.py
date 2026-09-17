@@ -39,7 +39,9 @@ def preflight() -> dict[str, Any]:
             "BATCHDATA_API_KEY": "present" if _present("BATCHDATA_API_KEY") else "missing",
             "ANTICAPTCHA_API_KEY": "present" if _present("ANTICAPTCHA_API_KEY") else "missing",
             "DALLAS_RECAPTCHA_TOKEN": "present" if _present("DALLAS_RECAPTCHA_TOKEN") else "missing",
+            "DATABASE_URL": "present" if _present("DATABASE_URL") else "missing",
         },
+        "default_backend": db.default_backend_name(),
         "skip_trace_provider": skip.name,
         "dallas_clerk_live": os.environ.get("DALLAS_CLERK_LIVE_ENABLED", "") == "1",
         "dallas_fixtures": {

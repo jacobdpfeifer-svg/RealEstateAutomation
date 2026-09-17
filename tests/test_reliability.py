@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+import json
 import sqlite3
 import tempfile
 import unittest
@@ -13,8 +14,8 @@ from unittest.mock import Mock, patch
 import requests
 
 from leads import db
-from leads.cli import build_parser, cmd_review, cmd_run, cmd_validate
-from leads.validate import run_phase1_validation
+from leads.cli import build_parser, cmd_review, cmd_run, cmd_state, cmd_validate
+from leads.validate import preflight, run_phase1_validation
 from leads.models import CaseRecord, ContactRecord, PropertyRecord
 from leads.pipeline import Pipeline
 from leads.review import retry_lead, approve_lead, reject_lead, skip_lead
@@ -181,7 +182,14 @@ class TestLocalDatabaseSafety(unittest.TestCase):
         with patch.dict("os.environ", {"DATABASE_URL": "postgresql://not-used"}), patch.object(db.PGConnection, "__init__", side_effect=AssertionError("must not connect")) as pg:
             with db.db_session(":memory:") as conn:
                 self.assertIsInstance(conn, sqlite3.Connection)
+                self.assertEqual(db.backend_name(conn), "sqlite")
             pg.assert_not_called()
+
+    def test_default_backend_name_follows_url(self):
+        with patch.dict("os.environ", {"DATABASE_URL": "postgresql://localhost:5432/example"}):
+            self.assertEqual(db.default_backend_name(), "postgres")
+        with patch.dict("os.environ", {"DATABASE_URL": ""}):
+            self.assertEqual(db.default_backend_name(), "sqlite")
 
     def test_nonexistent_review_decision_does_not_create_ledger_event(self):
         with db.db_session(":memory:") as conn:
@@ -247,6 +255,44 @@ class TestCLIOutcomes(unittest.TestCase):
         with patch.object(Pipeline, "run_all", return_value={"enrich": {"errors": 1}}), redirect_stdout(io.StringIO()):
             self.assertEqual(cmd_run(args), 1)
 
+    def test_allow_disabled_requires_county_and_rejects_all_enabled(self):
+        parser = build_parser()
+        args = parser.parse_args(["run", "--county", "bexar", "--allow-disabled", "--db", ":memory:"])
+        self.assertTrue(args.allow_disabled)
+        errors = io.StringIO()
+        with redirect_stderr(errors):
+            self.assertEqual(
+                cmd_run(parser.parse_args(["run", "--all-enabled", "--allow-disabled", "--db", ":memory:"])),
+                2,
+            )
+        self.assertIn("--allow-disabled cannot be combined", errors.getvalue())
+        errors = io.StringIO()
+        with redirect_stderr(errors):
+            self.assertEqual(
+                cmd_run(parser.parse_args(["run", "--allow-disabled", "--db", ":memory:"])),
+                2,
+            )
+        self.assertIn("--allow-disabled requires --county", errors.getvalue())
+        seen = []
+
+        def run(self, county, since, dry_run=False):
+            seen.append(self.require_enabled)
+            return {"ingest": {"found": 0}}
+
+        with patch.object(Pipeline, "run_all", run), redirect_stdout(io.StringIO()):
+            self.assertEqual(cmd_run(args), 0)
+        self.assertEqual(seen, [False])
+
+    def test_state_json_includes_sqlite_backend(self):
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "scratch.db"
+            args = build_parser().parse_args(["state", "--db", str(path)])
+            stdout = io.StringIO()
+            with patch.dict("os.environ", {"DATABASE_URL": "postgresql://not-used"}), redirect_stdout(stdout):
+                self.assertEqual(cmd_state(args), 0)
+            payload = json.loads(stdout.getvalue())
+            self.assertEqual(payload["backend"], "sqlite")
+
     def test_missing_review_lead_is_clean_error(self):
         with tempfile.TemporaryDirectory() as temp:
             path = Path(temp) / "scratch.db"
@@ -261,6 +307,16 @@ class TestCLIOutcomes(unittest.TestCase):
 
 
 class TestValidationOutcomes(unittest.TestCase):
+    def test_preflight_default_backend_follows_patched_url(self):
+        with patch.dict("os.environ", {"DATABASE_URL": "postgresql://localhost:5432/example"}):
+            checks = preflight()
+        self.assertEqual(checks["default_backend"], "postgres")
+        self.assertEqual(checks["secrets"]["DATABASE_URL"], "present")
+        with patch.dict("os.environ", {"DATABASE_URL": ""}):
+            checks = preflight()
+        self.assertEqual(checks["default_backend"], "sqlite")
+        self.assertEqual(checks["secrets"]["DATABASE_URL"], "missing")
+
     def test_capped_validation_is_not_daily_ready_with_deferred_work(self):
         checks = {"secrets": {"BATCHDATA_API_KEY": "present"}, "dallas_clerk_live": False,
                   "dallas_fixtures": {"html_files": 1}}

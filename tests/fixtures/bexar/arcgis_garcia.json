@@ -1,0 +1,15 @@
+{
+  "displayFieldName": "Owner",
+  "features": [
+    {
+      "attributes": {
+        "AcctNumb": "12345678",
+        "Owner": "GARCIA MARIA",
+        "Situs": "100 MAIN ST, SAN ANTONIO, TX 78205",
+        "TotVal": 250000,
+        "State_cd": "A1",
+        "PropID": 999
+      }
+    }
+  ]
+}

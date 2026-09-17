@@ -1,0 +1,14 @@
+{
+  "displayFieldName": "OWNER_NAME",
+  "features": [
+    {
+      "attributes": {
+        "APN": "123-45-678",
+        "OWNER_NAME": "SMITH JANE",
+        "PHYSICAL_ADDRESS": "300 PALM ST, PHOENIX 85003",
+        "FCV_CUR": 410000,
+        "TAX_YR_CUR": 2026
+      }
+    }
+  ]
+}

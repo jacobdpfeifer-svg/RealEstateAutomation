@@ -31,6 +31,47 @@ class TestClassifyResponse(unittest.TestCase):
         self.assertEqual(hit["owner_field"], "Owner")
         self.assertEqual(hit["apn_field"], "AcctNumb")
 
+    def test_arcgis_guesses_prefer_hint_priority_over_field_order(self) -> None:
+        bexar = json_dumps(
+            {
+                "type": "Feature Layer",
+                "name": "Parcels",
+                "fields": [
+                    {"name": "PropID"},
+                    {"name": "Owner"},
+                    {"name": "AcctNumb"},
+                    {"name": "TotVal"},
+                    {"name": "State_cd"},
+                ],
+            }
+        )
+        hit = classify_response("https://example.com/MapServer/0?f=json", 200, "application/json", bexar)
+        self.assertEqual(hit["apn_field"], "AcctNumb")
+        self.assertEqual(hit["value_field"], "TotVal")
+        self.assertEqual(hit["type_field"], "State_cd")
+        self.assertEqual(len(hit["fields"]), 5)
+
+        names = [f"F{i:02d}" for i in range(56)]
+        names[3] = "OWNER_NAME"
+        names[4] = "ACCOUNT"
+        names[8] = "LAND_VALUE"
+        names[44] = "TOTAL_VALU"
+        names[45] = "PARCELTYPE"
+        tarrant = json_dumps(
+            {
+                "type": "Feature Layer",
+                "name": "TADParcels",
+                "fields": [{"name": name} for name in names],
+            }
+        )
+        hit = classify_response("https://example.com/FeatureServer/0?f=json", 200, "application/json", tarrant)
+        self.assertEqual(hit["field_count"], 56)
+        self.assertEqual(len(hit["fields"]), 56)
+        self.assertEqual(hit["apn_field"], "ACCOUNT")
+        self.assertEqual(hit["value_field"], "TOTAL_VALU")
+        self.assertEqual(hit["type_field"], "PARCELTYPE")
+        self.assertNotEqual(hit["value_field"], "LAND_VALUE")
+
     def test_odyssey_html_is_portal(self) -> None:
         html = '<form>SmartSearch <div class="g-recaptcha"></div></form>'
         hit = classify_response("https://courtsportal.example/DALLASPROD", 200, "text/html", html)
@@ -80,14 +121,20 @@ class TestProbeCatalog(unittest.TestCase):
 
     def test_probe_only_counties_are_disabled(self) -> None:
         counties = load_counties(ROOT / "config" / "counties.toml")
+        expected_tax = {
+            "tarrant": "adapters.tx.tarrant_tax.TarrantTaxAdapter",
+            "bexar": "adapters.tx.bexar_tax.BexarTaxAdapter",
+            "maricopa": "adapters.az.maricopa_tax.MaricopaTaxAdapter",
+        }
         for key in ("tarrant", "bexar", "maricopa"):
             cfg = counties[key]
             self.assertFalse(cfg.enabled)
-            self.assertEqual(cfg.clerk_adapter, "")
-            self.assertEqual(cfg.tax_adapter, "")
-        self.assertEqual(counties["tarrant"].tax_lookup, ["arcgis_rest"])
-        self.assertEqual(counties["bexar"].tax_lookup, ["arcgis_rest"])
-        self.assertEqual(counties["maricopa"].tax_lookup, ["arcgis_rest"])
+            self.assertEqual(cfg.tax_adapter, expected_tax[key])
+            self.assertEqual(cfg.tax_lookup, ["arcgis_rest"])
+        self.assertEqual(counties["bexar"].clerk_adapter, "adapters.tx.bexar_clerk.BexarClerkAdapter")
+        self.assertEqual(counties["tarrant"].clerk_adapter, "")
+        self.assertEqual(counties["maricopa"].clerk_adapter, "")
+        self.assertEqual(counties["maricopa"].plaintiff_terms, [])
 
 
 class TestParseMoney(unittest.TestCase):

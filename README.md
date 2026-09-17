@@ -21,9 +21,15 @@ cp config/secrets.env.example config/secrets.env
 
 ### Database
 
-Defaults to a local SQLite file (`leads.db`) — nothing else to set up. For Postgres:
+Defaults to a local SQLite file (`leads.db`) when `DATABASE_URL` is unset. This
+machine's production store is Homebrew PostgreSQL 16 / `re_tax_leads`: with
+`DATABASE_URL` set, the default CLI path and `scripts/run_daily.sh` use Postgres.
+Any explicit `--db` scratch path stays SQLite.
+
+Shells (and Cursor agent terminals) that omit Homebrew will miss `brew`/`psql`:
 
 ```bash
+export PATH="/opt/homebrew/bin:/opt/homebrew/opt/postgresql@16/bin:$PATH"
 brew install postgresql@16
 brew services start postgresql@16
 createdb re_tax_leads

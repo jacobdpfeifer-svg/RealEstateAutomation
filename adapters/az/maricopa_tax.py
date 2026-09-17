@@ -10,8 +10,8 @@ from adapters.registry import CountyConfig
 from leads.models import PropertyRecord
 
 
-class HarrisTaxAdapter:
-    county_fips = "48201"
+class MaricopaTaxAdapter:
+    county_fips = "04013"
 
     def __init__(self, cfg: CountyConfig) -> None:
         self.cfg = cfg
@@ -19,11 +19,13 @@ class HarrisTaxAdapter:
             config_from_county(
                 cfg,
                 defaults={
-                    "mapserver_url": "https://www.gis.hctx.net/arcgis/rest/services/HCAD/Parcels/MapServer/0",
-                    "owner_field": "owner_name_1",
-                    "apn_field": "HCAD_NUM",
-                    "value_field": "total_market_val",
-                    "type_field": "parcel_type",
+                    "mapserver_url": "https://gis.mcassessor.maricopa.gov/arcgis/rest/services/Parcels/MapServer/0",
+                    "owner_field": "OWNER_NAME",
+                    "apn_field": "APN",
+                    "address_fields": ("PHYSICAL_ADDRESS",),
+                    "value_field": "FCV_CUR",
+                    "assessor_url_template": "https://mcassessor.maricopa.gov/mcs/?q={apn}",
+                    "situs_state": "AZ",
                 },
             )
         )

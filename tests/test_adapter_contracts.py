@@ -57,6 +57,77 @@ class TestSourceContracts(unittest.TestCase):
         self.assertEqual(client.attrs_to_property(attrs, case_id=1, match_confidence=1).situs_address,
                          "100 EXAMPLE ST, HOUSTON, TX 77002")
 
+    def test_arcgis_appends_situs_state_to_one_part_address(self):
+        client = ArcGISOwnerSearch(
+            ArcGISConfig(
+                "https://example.test/MapServer/0",
+                owner_field="OWNER_NAME",
+                apn_field="APN",
+                address_fields=("PHYSICAL_ADDRESS",),
+                situs_state="AZ",
+            )
+        )
+        attrs = {
+            "APN": "1",
+            "OWNER_NAME": "SMITH",
+            "PHYSICAL_ADDRESS": "300 PALM ST, PHOENIX 85003",
+        }
+        self.assertEqual(
+            client.attrs_to_property(attrs, case_id=1, match_confidence=1).situs_address,
+            "300 PALM ST, PHOENIX 85003 AZ",
+        )
+
+    def test_arcgis_owner_search_requests_value_and_type_fields(self):
+        session = Mock()
+        session.get.return_value = response(data={"features": []})
+        client = ArcGISOwnerSearch(
+            ArcGISConfig(
+                "https://example.test/MapServer/0",
+                owner_field="Owner",
+                apn_field="AcctNumb",
+                address_fields=("Situs",),
+                value_field="TotVal",
+                type_field="State_cd",
+            ),
+            session,
+        )
+        client.search_by_owner("GARCIA")
+        fields = parse_qs(urlsplit(session.get.call_args.args[0]).query)["outFields"][0].split(",")
+        self.assertIn("TotVal", fields)
+        self.assertIn("State_cd", fields)
+        self.assertIn("Owner", fields)
+        self.assertIn("AcctNumb", fields)
+
+    def test_phase3_arcgis_fixtures_map_county_fields(self):
+        from adapters.az.maricopa_tax import MaricopaTaxAdapter
+        from adapters.tx.bexar_tax import BexarTaxAdapter
+        from adapters.tx.tarrant_tax import TarrantTaxAdapter
+
+        counties = load_counties()
+        cases = (
+            (BexarTaxAdapter(counties["bexar"]), "bexar/arcgis_garcia.json", "GARCIA", "12345678", "A1", 250000.0, "TX"),
+            (TarrantTaxAdapter(counties["tarrant"]), "tarrant/arcgis_williams.json", "WILLIAMS", "01234567", "RESIDENTIAL", 180000.0, "TX"),
+            (MaricopaTaxAdapter(counties["maricopa"]), "maricopa/arcgis_smith.json", "SMITH", "123-45-678", "", 410000.0, "AZ"),
+        )
+        for adapter, fixture, query, apn, prop_type, value, state in cases:
+            with self.subTest(fixture=fixture):
+                payload = json.loads((FIXTURES / fixture).read_text())
+                session = Mock()
+                session.get.return_value = response(data=payload)
+                adapter.client.session = session
+                props = adapter.search_by_owner(query)
+                self.assertEqual(len(props), 1)
+                self.assertEqual(props[0].apn, apn)
+                self.assertEqual(props[0].property_type, prop_type)
+                self.assertEqual(props[0].total_value, value)
+                if state == "AZ":
+                    self.assertIn("PHOENIX", props[0].situs_address)
+                    self.assertIn("AZ", props[0].situs_address)
+                    self.assertNotIn("TX", props[0].situs_address)
+                session.get.return_value = response(data={"features": [], "exceededTransferLimit": True})
+                with self.assertRaises(SourceChangedError):
+                    adapter.search_by_owner(query)
+
     def test_dcad_form_post_contract(self):
         html = (FIXTURES / "dallas/dcad_owner_search_johnson.html").read_text()
         session = Mock()
@@ -123,6 +194,60 @@ class TestSourceContracts(unittest.TestCase):
         with patch.dict("os.environ", {"ANTICAPTCHA_API_KEY": "test", "DALLAS_RECAPTCHA_TOKEN": "test", "DALLAS_CLERK_LIVE_ENABLED": ""}):
             self.assertFalse(adapter._can_live_search())
             self.assertEqual(adapter.search_tax_suits(date(2099, 1, 1)), [])
+
+    def test_bexar_keys_do_not_implicitly_enable_live_search(self):
+        from adapters.tx.bexar_clerk import BexarClerkAdapter
+
+        adapter = BexarClerkAdapter(load_counties()["bexar"], artifact_dir=FIXTURES / "bexar")
+        with patch.dict("os.environ", {"BEXAR_CLERK_LIVE_ENABLED": "", "ANTICAPTCHA_API_KEY": "test"}):
+            self.assertFalse(adapter._can_live_search())
+            cases = adapter.search_tax_suits(date(2026, 8, 1))
+            self.assertGreater(len(cases), 0)
+            self.assertTrue(all(c.county_fips == "48029" for c in cases))
+            self.assertTrue(any("BEXAR COUNTY" in c.plaintiff.upper() for c in cases))
+        self.assertFalse(adapter.client.recaptcha_required)
+        self.assertEqual(adapter.client.warmup_path, "/")
+        self.assertTrue(adapter.client.warmup_url.endswith("/Portal/"))
+
+    def test_bexar_warmup_405_is_source_changed(self):
+        from adapters.tx.bexar_clerk import BexarClerkAdapter
+
+        adapter = BexarClerkAdapter(load_counties()["bexar"], artifact_dir=FIXTURES / "bexar")
+        session = Mock()
+        session.get.return_value = response("<html></html>", status=405)
+        adapter.client.session = session
+        with self.assertRaises(SourceChangedError):
+            adapter.client.search_business_name("BEXAR COUNTY TAX*")
+        url = session.get.call_args.args[0]
+        self.assertTrue(url.rstrip("/").endswith("Portal"))
+        self.assertNotIn("Dashboard", url)
+        session.post.assert_not_called()
+
+    def test_bexar_waf_html_is_not_zero_success(self):
+        from adapters.tx.bexar_clerk import BexarClerkAdapter
+
+        with tempfile.TemporaryDirectory() as directory:
+            Path(directory, "waf.html").write_text(
+                "<html>Let's confirm you are human. AWS WAF</html>",
+                encoding="utf-8",
+            )
+            adapter = BexarClerkAdapter(load_counties()["bexar"], artifact_dir=Path(directory))
+            with self.assertRaises(SourceChangedError):
+                adapter.search_tax_suits(date(2026, 1, 1))
+
+    def test_disabled_county_requires_explicit_bypass(self):
+        from adapters.registry import get_clerk_adapter, get_tax_adapter
+        from adapters.tx.bexar_clerk import BexarClerkAdapter
+        from adapters.tx.bexar_tax import BexarTaxAdapter
+
+        with self.assertRaises(RuntimeError):
+            get_clerk_adapter("bexar")
+        with self.assertRaises(RuntimeError):
+            get_tax_adapter("bexar")
+        clerk = get_clerk_adapter("bexar", require_enabled=False)
+        tax = get_tax_adapter("bexar", require_enabled=False)
+        self.assertIsInstance(clerk, BexarClerkAdapter)
+        self.assertIsInstance(tax, BexarTaxAdapter)
 
     def test_batchdata_unknown_payload_is_not_a_successful_no_match(self):
         session = Mock()

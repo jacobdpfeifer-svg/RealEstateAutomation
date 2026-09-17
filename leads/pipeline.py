@@ -15,19 +15,29 @@ MATCH_AUTO_THRESHOLD = 0.85
 
 
 class Pipeline:
-    def __init__(self, conn, config_path=None, *, max_enrich: int | None = None) -> None:
+    def __init__(
+        self,
+        conn,
+        config_path=None,
+        *,
+        max_enrich: int | None = None,
+        require_enabled: bool = True,
+    ) -> None:
         if max_enrich is not None and max_enrich < 0:
             raise ValueError("max_enrich must be nonnegative")
         self.max_enrich = max_enrich
         self.enrich_attempted = 0
         self.conn = conn
         self.config_path = config_path
+        self.require_enabled = require_enabled
         self.max_attempts = int(os.environ.get("LEADS_MAX_ENRICH_ATTEMPTS", "3"))
         if self.max_attempts < 1:
             raise ValueError("LEADS_MAX_ENRICH_ATTEMPTS must be positive")
 
     def ingest_county(self, county_key: str, since: date, *, dry_run: bool = False) -> dict:
-        clerk = get_clerk_adapter(county_key, self.config_path)
+        clerk = get_clerk_adapter(
+            county_key, self.config_path, require_enabled=self.require_enabled
+        )
         cases = clerk.search_tax_suits(since)
         inserted = 0
         if dry_run:
@@ -128,7 +138,9 @@ class Pipeline:
 
         counties = load_counties(self.config_path)
         cfg = next(c for c in counties.values() if c.fips == county_fips)
-        tax = get_tax_adapter(cfg.name.lower(), self.config_path)
+        tax = get_tax_adapter(
+            cfg.name.lower(), self.config_path, require_enabled=self.require_enabled
+        )
         skip = get_skip_provider_for_county(cfg.name.lower(), self.config_path)
 
         candidates = tax.search_by_owner(defendant_norm or defendant_raw)

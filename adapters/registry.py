@@ -47,7 +47,11 @@ def load_counties(config_path: Path | None = None) -> dict[str, CountyConfig]:
             state=row["state"],
             enabled=bool(row.get("enabled", True)),
             plaintiff=row.get("plaintiff", ""),
-            plaintiff_terms=list(row.get("plaintiff_terms") or [row.get("plaintiff", "")]),
+            plaintiff_terms=(
+                [str(term) for term in (row.get("plaintiff_terms") or [])]
+                if "plaintiff_terms" in row
+                else [row.get("plaintiff", "")]
+            ),
             case_type_filter=list(row.get("case_type_filter") or []),
             ingest=list(row.get("ingest") or []),
             tax_lookup=list(row.get("tax_lookup") or []),
@@ -67,13 +71,18 @@ def _import_class(dotted: str) -> type:
     return getattr(module, class_name)
 
 
-def get_clerk_adapter(county_key: str, config_path: Path | None = None) -> ClerkAdapter:
+def get_clerk_adapter(
+    county_key: str,
+    config_path: Path | None = None,
+    *,
+    require_enabled: bool = True,
+) -> ClerkAdapter:
     counties = load_counties(config_path)
     key = county_key.lower()
     if key not in counties:
         raise KeyError(f"Unknown county: {county_key}")
     cfg = counties[key]
-    if not cfg.enabled:
+    if require_enabled and not cfg.enabled:
         raise RuntimeError(f"County disabled: {cfg.name}")
     if not cfg.clerk_adapter:
         raise RuntimeError(f"No clerk adapter registered for {cfg.name} (probe-only)")
@@ -81,13 +90,18 @@ def get_clerk_adapter(county_key: str, config_path: Path | None = None) -> Clerk
     return cls(cfg)
 
 
-def get_tax_adapter(county_key: str, config_path: Path | None = None) -> TaxAdapter:
+def get_tax_adapter(
+    county_key: str,
+    config_path: Path | None = None,
+    *,
+    require_enabled: bool = True,
+) -> TaxAdapter:
     counties = load_counties(config_path)
     key = county_key.lower()
     if key not in counties:
         raise KeyError(f"Unknown county: {county_key}")
     cfg = counties[key]
-    if not cfg.enabled:
+    if require_enabled and not cfg.enabled:
         raise RuntimeError(f"County disabled: {cfg.name}")
     if not cfg.tax_adapter:
         raise RuntimeError(f"No tax adapter registered for {cfg.name} (probe-only)")

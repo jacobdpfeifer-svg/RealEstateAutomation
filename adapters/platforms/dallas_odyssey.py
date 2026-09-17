@@ -18,6 +18,25 @@ DEFAULT_PORTAL = "https://courtsportal.dallascounty.org/DALLASPROD"
 SMART_SEARCH_PATH = "/SmartSearch/SmartSearch/SmartSearch"
 DASHBOARD_PATH = "/Home/Dashboard/29"
 RECAPTCHA_SITEKEY = "6LfaKq4pAAAAAMldM38bgzOyUGw7iRpHPbt-C8Lg"
+_CHALLENGE_MARKERS = (
+    "confirm you are human",
+    "aws waf",
+    "awswaf",
+    "attention required",
+    "request blocked",
+)
+
+
+def _abs_path(path: str) -> str:
+    cleaned = (path or "").strip() or "/"
+    if cleaned == "/":
+        return "/"
+    return cleaned if cleaned.startswith("/") else f"/{cleaned}"
+
+
+def _is_access_challenge(html: str) -> bool:
+    lowered = (html or "").lower()
+    return any(token in lowered for token in _CHALLENGE_MARKERS)
 
 
 def _cell_text(html: str) -> str:
@@ -278,7 +297,7 @@ def solve_recaptcha_v2(api_key: str, site_key: str, page_url: str) -> str:
 
 
 class DallasOdysseyClient:
-    """Dallas County Tyler Odyssey Smart Search (portal_scrape)."""
+    """Tyler Odyssey Smart Search client (Dallas by default; Bexar reuses the same shape)."""
 
     def __init__(
         self,
@@ -286,31 +305,57 @@ class DallasOdysseyClient:
         session: requests.Session | None = None,
         *,
         site_key: str = RECAPTCHA_SITEKEY,
+        dashboard_path: str = DASHBOARD_PATH,
+        search_path: str = SMART_SEARCH_PATH,
+        recaptcha_required: bool = True,
+        warmup_path: str | None = None,
     ) -> None:
         self.portal_base = portal_base.rstrip("/")
         self.site_key = site_key
+        self.dashboard_path = _abs_path(dashboard_path)
+        self.search_path = _abs_path(search_path)
+        self.warmup_path = _abs_path(warmup_path if warmup_path is not None else dashboard_path)
+        self.recaptcha_required = recaptcha_required
         self.session = session or SourceSession()
         self.session.headers.setdefault("User-Agent", USER_AGENT)
 
+    def _join(self, path: str) -> str:
+        if path == "/":
+            return f"{self.portal_base}/"
+        return f"{self.portal_base}{path}"
+
     @property
     def dashboard_url(self) -> str:
-        return f"{self.portal_base}{DASHBOARD_PATH}"
+        return self._join(self.dashboard_path)
+
+    @property
+    def warmup_url(self) -> str:
+        return self._join(self.warmup_path)
 
     @property
     def search_url(self) -> str:
-        return f"{self.portal_base}{SMART_SEARCH_PATH}"
+        return self._join(self.search_path)
+
+    def _raise_if_blocked(self, resp: requests.Response, role: str) -> None:
+        if resp.status_code in (403, 405):
+            raise SourceChangedError(f"Odyssey {role} HTTP {resp.status_code}")
+        if _is_access_challenge(resp.text or ""):
+            raise SourceChangedError(f"Odyssey {role} returned an access challenge")
+        resp.raise_for_status()
 
     def _recaptcha_token(self) -> str:
-        # Allow a pre-solved token for debugging / CI.
+        if not self.recaptcha_required:
+            return ""
+        # Dallas-only pre-solved token; ignored when recaptcha is off (Bexar).
         env_token = os.environ.get("DALLAS_RECAPTCHA_TOKEN", "").strip()
         if env_token:
             return env_token
         api_key = os.environ.get("ANTICAPTCHA_API_KEY", "").strip()
         if not api_key:
             raise RuntimeError(
-                "Dallas Odyssey Smart Search requires reCAPTCHA for anonymous use. "
-                "Set ANTICAPTCHA_API_KEY (or DALLAS_RECAPTCHA_TOKEN), or place saved "
-                "HTML fixtures under artifacts/raw/dallas/clerk/."
+                "Odyssey Smart Search requires reCAPTCHA for anonymous use. "
+                "Set ANTICAPTCHA_API_KEY (or DALLAS_RECAPTCHA_TOKEN for Dallas), "
+                "or place saved HTML fixtures under the county clerk fixture directory."
             )
         return solve_recaptcha_v2(api_key, self.site_key, self.dashboard_url)
 
@@ -322,13 +367,12 @@ class DallasOdysseyClient:
         file_date_end: date | None = None,
     ) -> tuple[str, int]:
         """POST a Business Name smart search; returns (html, status_code)."""
-        dash = self.session.get(self.dashboard_url, timeout=60)
-        dash.raise_for_status()
-        token = self._recaptcha_token()
+        self._raise_if_blocked(self.session.get(self.warmup_url, timeout=60), "warmup")
+        token = self._recaptcha_token() if self.recaptcha_required else ""
         start = file_date_start.strftime("%m/%d/%Y") if file_date_start else ""
         end = file_date_end.strftime("%m/%d/%Y") if file_date_end else ""
         data = {
-            "Settings.CaptchaEnabled": "True",
+            "Settings.CaptchaEnabled": "True" if self.recaptcha_required else "False",
             "Settings.CaptchaDisabledForAuthenticated": "True",
             "caseCriteria.SearchCriteria": query,
             "caseCriteria.JudicialOfficerSearchBy": "",
@@ -359,11 +403,11 @@ class DallasOdysseyClient:
         resp = self.session.post(
             self.search_url,
             data=data,
-            headers={"Referer": self.dashboard_url},
+            headers={"Referer": self.warmup_url},
             timeout=120,
             allow_redirects=True,
         )
-        resp.raise_for_status()
+        self._raise_if_blocked(resp, "search")
         return resp.text, resp.status_code
 
     def search_tax_suits(
@@ -384,7 +428,9 @@ class DallasOdysseyClient:
                 q, file_date_start=since, file_date_end=today
             )
             if status >= 400:
-                raise RuntimeError(f"Dallas Odyssey search HTTP {status} for query={q!r}")
+                raise RuntimeError(f"Odyssey search HTTP {status} for query={q!r}")
+            if _is_access_challenge(html):
+                raise SourceChangedError("Odyssey search returned an access challenge")
             rows = parse_smart_search_results(html)
             if not rows and not re.search(r"no (?:cases|results|records) (?:were )?found", _cell_text(html), re.I):
                 raise SourceChangedError("Odyssey returned no recognized results or empty-result message")

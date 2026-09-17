@@ -10,8 +10,8 @@ from adapters.registry import CountyConfig
 from leads.models import PropertyRecord
 
 
-class HarrisTaxAdapter:
-    county_fips = "48201"
+class TarrantTaxAdapter:
+    county_fips = "48439"
 
     def __init__(self, cfg: CountyConfig) -> None:
         self.cfg = cfg
@@ -19,11 +19,17 @@ class HarrisTaxAdapter:
             config_from_county(
                 cfg,
                 defaults={
-                    "mapserver_url": "https://www.gis.hctx.net/arcgis/rest/services/HCAD/Parcels/MapServer/0",
-                    "owner_field": "owner_name_1",
-                    "apn_field": "HCAD_NUM",
-                    "value_field": "total_market_val",
-                    "type_field": "parcel_type",
+                    "mapserver_url": (
+                        "https://mapit.tarrantcounty.com/arcgis/rest/services/"
+                        "Dynamic/TADParcels/FeatureServer/0"
+                    ),
+                    "owner_field": "OWNER_NAME",
+                    "apn_field": "ACCOUNT",
+                    "address_fields": ("SITUS_ADDR", "CITY", "ZIPCODE"),
+                    "value_field": "TOTAL_VALU",
+                    "type_field": "PARCELTYPE",
+                    "assessor_url_template": "https://www.tad.org/search-results?query={apn}",
+                    "situs_state": "TX",
                 },
             )
         )

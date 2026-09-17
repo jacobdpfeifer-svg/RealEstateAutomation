@@ -28,6 +28,11 @@ from leads.secrets import load_secrets
 from leads.utils import parse_since_days, write_private_text
 from leads.validate import run_phase1_validation
 
+_DB_HELP = (
+    "Database path. Default leads.db uses DATABASE_URL when it is Postgres; "
+    "any other path stays SQLite."
+)
+
 
 def _project_root() -> Path:
     return Path(__file__).resolve().parent.parent
@@ -47,6 +52,7 @@ def cmd_state(args: argparse.Namespace) -> int:
             "SELECT error, retrieved_at FROM fetch_log WHERE error != '' ORDER BY id DESC LIMIT 1"
         ).fetchone()
         out = {
+            "backend": db.backend_name(conn),
             "counties": summary,
             "review_backlog": backlog,
             "errors": errors,
@@ -58,6 +64,13 @@ def cmd_state(args: argparse.Namespace) -> int:
 
 
 def cmd_run(args: argparse.Namespace) -> int:
+    allow_disabled = bool(getattr(args, "allow_disabled", False))
+    if allow_disabled and args.all_enabled:
+        print("--allow-disabled cannot be combined with --all-enabled", file=sys.stderr)
+        return 2
+    if allow_disabled and not args.county:
+        print("--allow-disabled requires --county", file=sys.stderr)
+        return 2
     since = date.today() - timedelta(days=parse_since_days(args.since))
     counties: list[str] = []
     if args.all_enabled:
@@ -72,7 +85,11 @@ def cmd_run(args: argparse.Namespace) -> int:
     run_id = uuid.uuid4().hex
     # Even schema initialization must not touch the configured database in dry-run.
     with db.pipeline_lock(args.db, disabled=args.dry_run), db.db_session(":memory:" if args.dry_run else args.db) as conn:
-        pipe = Pipeline(conn, max_enrich=args.max_enrich)
+        pipe = Pipeline(
+            conn,
+            max_enrich=args.max_enrich,
+            require_enabled=not allow_disabled,
+        )
         for county in counties:
             started = time.monotonic()
             event("county_started", run_id=run_id, county=county)
@@ -240,7 +257,7 @@ def nonnegative_int(value: str) -> int:
 def build_parser() -> argparse.ArgumentParser:
     root = _project_root()
     parser = argparse.ArgumentParser(prog="leads", description="Tax lawsuit RE lead pipeline")
-    parser.add_argument("--db", default=str(root / "leads.db"), help="SQLite database path")
+    parser.add_argument("--db", default=str(root / "leads.db"), help=_DB_HELP)
     sub = parser.add_subparsers(dest="command", required=True)
 
     p_state = sub.add_parser("state", help="Counts, errors, review backlog")
@@ -253,6 +270,11 @@ def build_parser() -> argparse.ArgumentParser:
     p_run.add_argument("--dry-run", action="store_true")
     p_run.add_argument("--max-enrich", type=nonnegative_int, default=None,
                        help="Maximum enrichment attempts across all selected counties; 0 = ingest only")
+    p_run.add_argument(
+        "--allow-disabled",
+        action="store_true",
+        help="Run one disabled county (requires --county; incompatible with --all-enabled)",
+    )
     p_run.set_defaults(func=cmd_run)
 
     p_pipe = sub.add_parser("pipeline", help="Run individual pipeline stages")
@@ -341,7 +363,7 @@ def build_parser() -> argparse.ArgumentParser:
         for action in parent._actions:
             if isinstance(action, argparse._SubParsersAction):
                 for child in action.choices.values():
-                    child.add_argument("--db", default=argparse.SUPPRESS, help="SQLite database path")
+                    child.add_argument("--db", default=argparse.SUPPRESS, help=_DB_HELP)
                     add_database_option(child)
     add_database_option(parser)
     return parser

@@ -21,8 +21,25 @@ USER_AGENT = "re-tax-leads/0.1 bootstrap"
 METHOD_RANK = {"bulk_dataset": 0, "api": 1, "portal_scrape": 2, "unknown": 3, "error": 4}
 OWNER_FIELD_HINTS = ("owner_name", "ownername", "owner", "own_name")
 APN_FIELD_HINTS = ("apn", "hcad", "acct", "account", "propid", "geoid", "parcel")
-VALUE_FIELD_HINTS = ("totval", "total_value", "market", "fcv", "tot_val", "value")
-TYPE_FIELD_HINTS = ("property_type", "proptype", "state_cd", "class", "landuse", "use_code")
+VALUE_FIELD_HINTS = (
+    "totval",
+    "total_value",
+    "total_valu",
+    "appraised",
+    "market",
+    "fcv",
+    "tot_val",
+    "value",
+)
+TYPE_FIELD_HINTS = (
+    "property_type",
+    "proptype",
+    "parceltype",
+    "state_cd",
+    "class",
+    "landuse",
+    "use_code",
+)
 
 
 def _project_root() -> Path:
@@ -71,7 +88,7 @@ def classify_response(url: str, status: int, content_type: str, text: str) -> di
                     "subtype": "arcgis_rest",
                     "layer": payload.get("name"),
                     "field_count": len(field_names) or len(payload.get("layers") or []),
-                    "fields": field_names[:40],
+                    "fields": field_names,
                     "owner_field": _guess_field(field_names, OWNER_FIELD_HINTS),
                     "apn_field": _guess_field(field_names, APN_FIELD_HINTS),
                     "value_field": _guess_field(field_names, VALUE_FIELD_HINTS),
@@ -109,10 +126,16 @@ def classify_response(url: str, status: int, content_type: str, text: str) -> di
 
 
 def _guess_field(names: list[str], hints: tuple[str, ...]) -> str:
+    """Prefer earlier hints over earlier field names.
+
+    Field-order matching made Bexar PropID beat AcctNumb and Tarrant LAND_VALUE
+    beat TOTAL_VALU whenever a weaker hint appeared first in the layer.
+    """
     lowered = [(n, n.lower()) for n in names if n]
-    for n, low in lowered:
-        if any(h in low for h in hints):
-            return n
+    for hint in hints:
+        for n, low in lowered:
+            if hint in low:
+                return n
     return ""
 
 
