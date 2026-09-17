@@ -72,7 +72,7 @@ def cmd_run(args: argparse.Namespace) -> int:
     run_id = uuid.uuid4().hex
     # Even schema initialization must not touch the configured database in dry-run.
     with db.pipeline_lock(args.db, disabled=args.dry_run), db.db_session(":memory:" if args.dry_run else args.db) as conn:
-        pipe = Pipeline(conn)
+        pipe = Pipeline(conn, max_enrich=args.max_enrich)
         for county in counties:
             started = time.monotonic()
             event("county_started", run_id=run_id, county=county)
@@ -93,7 +93,7 @@ def cmd_run(args: argparse.Namespace) -> int:
 
 def cmd_pipeline(args: argparse.Namespace) -> int:
     with db.pipeline_lock(args.db), db.db_session(args.db) as conn:
-        pipe = Pipeline(conn)
+        pipe = Pipeline(conn, max_enrich=args.max_enrich)
         if args.stage == "enrich-pending":
             result = pipe.enrich_pending(args.county.lower() if args.county else None)
         elif args.stage == "score":
@@ -108,34 +108,38 @@ def cmd_pipeline(args: argparse.Namespace) -> int:
 
 def cmd_review(args: argparse.Namespace) -> int:
     with db.db_session(args.db) as conn:
-        if args.review_cmd == "list":
-            rows = list_review_queue(conn, args.status)
-            print(json.dumps(rows, indent=2, default=str))
-        elif args.review_cmd == "approve":
-            approve_lead(conn, args.lead_id, args.note or "")
-            print(f"Approved lead {args.lead_id}")
-        elif args.review_cmd == "reject":
-            reject_lead(conn, args.lead_id, args.note or "")
-            print(f"Rejected lead {args.lead_id}")
-        elif args.review_cmd == "skip":
-            skip_lead(conn, args.lead_id, args.note or "")
-            print(f"Skipped lead {args.lead_id}")
-        elif args.review_cmd == "retry":
-            retry_lead(conn, args.lead_id, args.note or "")
-            print(f"Requeued lead {args.lead_id}")
-        elif args.review_cmd == "paste":
-            paste_contact(
-                conn,
-                args.lead_id,
-                name=args.name,
-                phone=args.phone or "",
-                email=args.email or "",
-                address=args.address or "",
-            )
-            print(f"Pasted contact for lead {args.lead_id}")
-        else:
-            print(f"Unknown review command: {args.review_cmd}", file=sys.stderr)
-            return 2
+        try:
+            if args.review_cmd == "list":
+                rows = list_review_queue(conn, args.status)
+                print(json.dumps(rows, indent=2, default=str))
+            elif args.review_cmd == "approve":
+                approve_lead(conn, args.lead_id, args.note or "")
+                print(f"Approved lead {args.lead_id}")
+            elif args.review_cmd == "reject":
+                reject_lead(conn, args.lead_id, args.note or "")
+                print(f"Rejected lead {args.lead_id}")
+            elif args.review_cmd == "skip":
+                skip_lead(conn, args.lead_id, args.note or "")
+                print(f"Skipped lead {args.lead_id}")
+            elif args.review_cmd == "retry":
+                retry_lead(conn, args.lead_id, args.note or "")
+                print(f"Requeued lead {args.lead_id}")
+            elif args.review_cmd == "paste":
+                paste_contact(
+                    conn,
+                    args.lead_id,
+                    name=args.name,
+                    phone=args.phone or "",
+                    email=args.email or "",
+                    address=args.address or "",
+                )
+                print(f"Pasted contact for lead {args.lead_id}")
+            else:
+                print(f"Unknown review command: {args.review_cmd}", file=sys.stderr)
+                return 2
+        except ValueError as exc:
+            print(f"Error: {exc}", file=sys.stderr)
+            return 1
     return 0
 
 
@@ -186,13 +190,17 @@ def cmd_validate(args: argparse.Namespace) -> int:
     db_path = args.db
     if Path(args.db).resolve() == Path(default_db).resolve():
         db_path = str(root / "artifacts" / "phase1_validation.db")
-    report = run_phase1_validation(db_path, since=args.since, skip_enrich=args.skip_enrich)
+    report = run_phase1_validation(db_path, since=args.since, skip_enrich=args.skip_enrich, max_enrich=args.max_enrich)
     text = json.dumps(report, indent=2, default=str)
     print(text)
     if args.output:
         Path(args.output).write_text(text, encoding="utf-8")
         print(f"Wrote {args.output}", file=sys.stderr)
-    return 0 if report.get("runs", {}).get("dallas", {}).get("ok") else 1
+    runs = report.get("runs", {})
+    return 0 if runs and all(
+        run.get("ok") and not run.get("result", {}).get("enrich", {}).get("errors", 0)
+        for run in runs.values()
+    ) else 1
 
 
 def cmd_probe(args: argparse.Namespace) -> int:
@@ -222,6 +230,13 @@ def cmd_probe(args: argparse.Namespace) -> int:
     return 0
 
 
+def nonnegative_int(value: str) -> int:
+    number = int(value)
+    if number < 0:
+        raise argparse.ArgumentTypeError("must be nonnegative")
+    return number
+
+
 def build_parser() -> argparse.ArgumentParser:
     root = _project_root()
     parser = argparse.ArgumentParser(prog="leads", description="Tax lawsuit RE lead pipeline")
@@ -236,11 +251,14 @@ def build_parser() -> argparse.ArgumentParser:
     p_run.add_argument("--all-enabled", action="store_true")
     p_run.add_argument("--since", default="7d", help="Lookback e.g. 7d, 30d")
     p_run.add_argument("--dry-run", action="store_true")
+    p_run.add_argument("--max-enrich", type=nonnegative_int, default=None,
+                       help="Maximum enrichment attempts across all selected counties; 0 = ingest only")
     p_run.set_defaults(func=cmd_run)
 
     p_pipe = sub.add_parser("pipeline", help="Run individual pipeline stages")
     p_pipe.add_argument("stage", choices=["enrich-pending", "score"])
     p_pipe.add_argument("--county", default=None)
+    p_pipe.add_argument("--max-enrich", type=nonnegative_int, default=None)
     p_pipe.set_defaults(func=cmd_pipeline)
 
     p_review = sub.add_parser("review", help="Human review queue")
@@ -310,6 +328,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Dallas ingest dry-run only (no DCAD / skip-trace)",
     )
     p_validate.add_argument("-o", "--output", default=None, help="Write JSON report")
+    p_validate.add_argument("--max-enrich", type=nonnegative_int, default=5)
     p_validate.set_defaults(func=cmd_validate)
 
     p_probe = sub.add_parser("probe", help="Classify county clerk/tax URLs (bulk > api > portal)")
@@ -317,6 +336,14 @@ def build_parser() -> argparse.ArgumentParser:
     p_probe.add_argument("-o", "--output", default=None)
     p_probe.set_defaults(func=cmd_probe)
 
+    # Suppressed defaults preserve a --db supplied before a subcommand.
+    def add_database_option(parent):
+        for action in parent._actions:
+            if isinstance(action, argparse._SubParsersAction):
+                for child in action.choices.values():
+                    child.add_argument("--db", default=argparse.SUPPRESS, help="SQLite database path")
+                    add_database_option(child)
+    add_database_option(parser)
     return parser
 
 

@@ -327,13 +327,16 @@ def ensure_lead(conn: sqlite3.Connection, case_id: int, status: str = "new") -> 
 
 
 def update_lead_status(conn: sqlite3.Connection, lead_id: int, status: str, note: str = "") -> None:
-    conn.execute(
+    cursor = conn.execute(
         """
         UPDATE lead SET pipeline_status = ?, review_note = ?, updated_at = ?
         WHERE id = ?
         """,
         (status, note, datetime.utcnow().isoformat(), lead_id),
     )
+
+    if cursor.rowcount != 1:
+        raise ValueError(f"Lead not found: {lead_id}")
 
 
 def state_summary(conn: sqlite3.Connection) -> list[dict[str, Any]]:

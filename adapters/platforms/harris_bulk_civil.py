@@ -12,7 +12,13 @@ import requests
 
 from leads.models import CaseRecord
 from leads.http import SourceChangedError, SourceSession
-from leads.utils import case_dedupe_key, normalize_defendant, plaintiff_is_tax_suit, write_private_text
+from leads.utils import (
+    case_dedupe_key,
+    case_type_matches,
+    normalize_defendant,
+    plaintiff_is_tax_suit,
+    write_private_text,
+)
 
 BULK_PAGE = "https://www.hcdistrictclerk.com/common/e-services/PublicDatasets.aspx"
 USER_AGENT = "re-tax-leads/0.1 (bulk-dataset importer; research)"
@@ -76,12 +82,16 @@ def filter_tax_suits(
     rows: list[dict[str, str]],
     plaintiff_terms: list[str],
     since: date,
+    case_type_filter: list[str] | None = None,
 ) -> list[dict[str, str]]:
     out: list[dict[str, str]] = []
     seen: set[str] = set()
     for row in rows:
         plaintiff = row.get("plaintiff") or ""
         if not plaintiff_is_tax_suit(plaintiff, plaintiff_terms):
+            continue
+        source_type = row.get("toac") or row.get("cs_typ") or ""
+        if not case_type_matches(source_type, case_type_filter):
             continue
         filed_raw = (row.get("file_dt") or "")[:10]
         if not filed_raw:
@@ -141,7 +151,11 @@ class HarrisBulkDownloader:
         self.artifact_dir = artifact_dir or Path(__file__).resolve().parents[2] / "artifacts/raw"
 
     def fetch_summaries_since(
-        self, since: date, plaintiff_terms: list[str], county_fips: str = "48201"
+        self,
+        since: date,
+        plaintiff_terms: list[str],
+        county_fips: str = "48201",
+        case_type_filter: list[str] | None = None,
     ) -> tuple[list[CaseRecord], list[dict[str, Any]]]:
         page = self.session.get(self.bulk_page, timeout=60)
         page.raise_for_status()
@@ -155,7 +169,7 @@ class HarrisBulkDownloader:
                 artifact = save_artifact(self.artifact_dir, "harris", fp.replace("\\", "_"), text)
             logs.append({"url": url, "file": fp, "status": status, "artifact": artifact})
             rows = parse_case_summary_tsv(text)
-            tax_rows = filter_tax_suits(rows, plaintiff_terms, since)
+            tax_rows = filter_tax_suits(rows, plaintiff_terms, since, case_type_filter)
             for row in tax_rows:
                 cases.append(row_to_case_record(row, county_fips, url))
         return cases, logs

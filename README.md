@@ -41,8 +41,8 @@ python3 scripts/bootstrap_county.py --county next
 # Phase 1 validation (Harris dry-run + Dallas fixture ingest)
 python3 -m leads validate -o artifacts/phase1_validation.json
 
-# Ingest + enrich Harris tax suits (last 7 days)
-python3 -m leads run --county harris --since 7d
+# Ingest Harris tax suits and attempt at most 5 enrichments
+python3 -m leads run --county harris --since 7d --max-enrich 5
 
 # Dallas: DCAD tax lookup is live; clerk ingest defaults to saved Odyssey HTML
 python3 -m leads run --county dallas --since 30d
@@ -142,3 +142,20 @@ exports use owner-only permissions. Existing data is not deleted or moved.
 `leads.db`, SQLite sidecars, raw artifacts, validation databases, and exports are
 Git-ignored; Git does not control iCloud sync, backups, or previously committed
 fixture data. Choose a retention policy and storage location before sharing data.
+
+### Bounded scratch rehearsal
+
+`--max-enrich N` caps enrichment attempts across all counties in one command,
+including failures. Zero ingests without enrichment; omitted means unbounded.
+Deferred rows remain pending for a later command. Each lead calls skip trace at
+most once per attempt. A new invocation has a new cap; include reruns in your
+spending ceiling. `validate` defaults to a cap of 5.
+
+```bash
+DALLAS_CLERK_LIVE_ENABLED=0 LEADS_SAVE_RAW=0 .venv/bin/python3 -m leads run --county harris --since 7d --max-enrich 5 --db artifacts/runtime/test_leads.db
+.venv/bin/python3 -m leads state --db artifacts/runtime/test_leads.db
+```
+
+`--db` works before or after subcommands. Explicit scratch paths override
+`DATABASE_URL`. The daily script has no cap or scratch override and is a production
+entry point; do not schedule it before accepting the runtime readiness report.

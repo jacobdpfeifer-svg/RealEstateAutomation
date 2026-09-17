@@ -1,0 +1,558 @@
+{
+  "counties_config": [
+    {
+      "fips": "48201",
+      "name": "Harris",
+      "enabled": true,
+      "ingest": [
+        "bulk_dataset"
+      ],
+      "tax_lookup": [
+        "arcgis_rest"
+      ]
+    },
+    {
+      "fips": "48113",
+      "name": "Dallas",
+      "enabled": true,
+      "ingest": [
+        "portal_scrape"
+      ],
+      "tax_lookup": [
+        "portal_scrape"
+      ]
+    },
+    {
+      "fips": "48439",
+      "name": "Tarrant",
+      "enabled": false,
+      "ingest": [
+        "portal_scrape"
+      ],
+      "tax_lookup": [
+        "arcgis_rest"
+      ]
+    },
+    {
+      "fips": "48029",
+      "name": "Bexar",
+      "enabled": false,
+      "ingest": [
+        "portal_scrape"
+      ],
+      "tax_lookup": [
+        "arcgis_rest"
+      ]
+    },
+    {
+      "fips": "04013",
+      "name": "Maricopa",
+      "enabled": false,
+      "ingest": [
+        "portal_scrape"
+      ],
+      "tax_lookup": [
+        "api"
+      ]
+    }
+  ],
+  "selected": [
+    "tarrant",
+    "bexar",
+    "maricopa"
+  ],
+  "probes": [
+    {
+      "county": "Tarrant",
+      "key": "tarrant",
+      "fips": "48439",
+      "state": "TX",
+      "clerk": {
+        "method": "portal_scrape",
+        "subtype": "odyssey",
+        "url": "https://odyssey.tarrantcounty.com/PublicAccess/default.aspx",
+        "final_url": "https://portal-txtarrant.tylertech.cloud/PublicAccess/default.aspx",
+        "status_code": 200
+      },
+      "tax": {
+        "method": "bulk_dataset",
+        "subtype": "gis_download",
+        "url": "https://www.tad.org/resources/data-downloads",
+        "final_url": "https://www.tad.org/resources/data-downloads",
+        "status_code": 200
+      },
+      "clerk_candidates": [
+        {
+          "method": "portal_scrape",
+          "subtype": "odyssey",
+          "url": "https://odyssey.tarrantcounty.com/PublicAccess/default.aspx",
+          "final_url": "https://portal-txtarrant.tylertech.cloud/PublicAccess/default.aspx",
+          "status_code": 200
+        },
+        {
+          "method": "unknown",
+          "subtype": "",
+          "url": "https://www.tarrantcountytx.gov/en/district-clerk/Divisions/Civil_Tax.html",
+          "final_url": "https://www.tarrantcountytx.gov/en/district-clerk/Divisions/Civil_Tax.html",
+          "status_code": 200
+        }
+      ],
+      "tax_candidates": [
+        {
+          "method": "api",
+          "subtype": "arcgis_rest",
+          "layer": "Parcel",
+          "field_count": 56,
+          "fields": [
+            "OBJECTID",
+            "TAXPIN",
+            "ACCOUNT",
+            "OWNER_NAME",
+            "OWNER_ADDR",
+            "OWNER_CITY",
+            "OWNER_ZIP",
+            "OWNER_ZIP_",
+            "SITUS_ADDR",
+            "TAD_MAP",
+            "MAPSCO",
+            "EXEMPTION_",
+            "LEGAL_1",
+            "LEGAL_2",
+            "LEGAL_3",
+            "LEGAL_4",
+            "SCHOOL",
+            "CITY",
+            "ZIPCODE",
+            "STATE",
+            "SPEC1",
+            "SPEC2",
+            "SPEC3",
+            "SPEC4",
+            "SPEC5",
+            "DEED_DATE",
+            "DEED_BOOK",
+            "DEED_PAGE",
+            "GARAGE_CAP",
+            "BEDROOMS",
+            "BATHROOMS",
+            "YEAR_BUILT",
+            "LIVING_ARE",
+            "SW_POOL",
+            "LAND_ACRES",
+            "LAND_SQFT",
+            "CENTRAL_HE",
+            "CENTRAL_AI",
+            "APPRAISAL_",
+            "APPRAISEDV"
+          ],
+          "owner_field": "OWNER_NAME",
+          "apn_field": "ACCOUNT",
+          "value_field": "LAND_VALUE",
+          "type_field": "",
+          "url": "https://mapit.tarrantcounty.com/arcgis/rest/services/Dynamic/TADParcels/FeatureServer/0?f=json",
+          "final_url": "https://mapit.tarrantcounty.com/arcgis/rest/services/Dynamic/TADParcels/FeatureServer/0?f=json",
+          "status_code": 200
+        },
+        {
+          "method": "api",
+          "subtype": "arcgis_rest",
+          "layer": "Tarrant County Parcel",
+          "field_count": 57,
+          "fields": [
+            "OBJECTID",
+            "TAXPIN",
+            "ACCOUNT",
+            "OWNER_NAME",
+            "OWNER_ADDR",
+            "OWNER_CITY",
+            "OWNER_ZIP",
+            "OWNER_ZIP_",
+            "SITUS_ADDR",
+            "TAD_MAP",
+            "MAPSCO",
+            "EXEMPTION_",
+            "LEGAL_1",
+            "LEGAL_2",
+            "LEGAL_3",
+            "LEGAL_4",
+            "SCHOOL",
+            "CITY",
+            "ZIPCODE",
+            "STATE",
+            "SPEC1",
+            "SPEC2",
+            "SPEC3",
+            "SPEC4",
+            "SPEC5",
+            "DEED_DATE",
+            "DEED_BOOK",
+            "DEED_PAGE",
+            "GARAGE_CAP",
+            "BEDROOMS",
+            "BATHROOMS",
+            "YEAR_BUILT",
+            "LIVING_ARE",
+            "SW_POOL",
+            "LAND_ACRES",
+            "LAND_SQFT",
+            "CENTRAL_HE",
+            "CENTRAL_AI",
+            "APPRAISAL_",
+            "APPRAISEDV"
+          ],
+          "owner_field": "OWNER_NAME",
+          "apn_field": "ACCOUNT",
+          "value_field": "LAND_VALUE",
+          "type_field": "",
+          "url": "https://mapit.tarrantcounty.com/arcgis/rest/services/Tax/TCProperty/MapServer/0?f=json",
+          "final_url": "https://mapit.tarrantcounty.com/arcgis/rest/services/Tax/TCProperty/MapServer/0?f=json",
+          "status_code": 200
+        },
+        {
+          "method": "bulk_dataset",
+          "subtype": "gis_download",
+          "url": "https://www.tad.org/resources/data-downloads",
+          "final_url": "https://www.tad.org/resources/data-downloads",
+          "status_code": 200
+        }
+      ],
+      "recommended": {
+        "ingest": [
+          "portal_scrape"
+        ],
+        "tax_lookup": [
+          "bulk_dataset"
+        ],
+        "note": "Do not write a portal scraper until bulk/API has been ruled out. Adapters are not registered until a probe-only county is promoted."
+      }
+    },
+    {
+      "county": "Bexar",
+      "key": "bexar",
+      "fips": "48029",
+      "state": "TX",
+      "clerk": {
+        "method": "bulk_dataset",
+        "subtype": "clerk_bulk",
+        "url": "https://portal-txbexar.tylertech.cloud/Portal/",
+        "final_url": "https://portal-txbexar.tylertech.cloud/Portal/",
+        "status_code": 200,
+        "daily_summaries_available": 0,
+        "latest_summary": null
+      },
+      "tax": {
+        "method": "api",
+        "subtype": "arcgis_rest",
+        "layer": "Parcels",
+        "field_count": 39,
+        "fields": [
+          "OBJECTID",
+          "PropID",
+          "Situs",
+          "Owner",
+          "AddrLn1",
+          "AddrLn2",
+          "AddrLn3",
+          "AddrCity",
+          "AddrSt",
+          "Country",
+          "Zip",
+          "Zip4",
+          "DBA",
+          "AcctNumb",
+          "LglDesc",
+          "LandVal",
+          "ImprVal",
+          "TotVal",
+          "Nbhd",
+          "GBA",
+          "TOT_GBA",
+          "YrBlt",
+          "Stories",
+          "NumRooms",
+          "Houses",
+          "Detached",
+          "State_cd",
+          "LglAcres",
+          "Acres",
+          "TaxUnits",
+          "Exempts",
+          "IS_UDI",
+          "UDIPARNT",
+          "Roll",
+          "SWP",
+          "PropUse",
+          "Shape",
+          "Shape.STArea()",
+          "Shape.STLength()"
+        ],
+        "owner_field": "Owner",
+        "apn_field": "PropID",
+        "value_field": "TotVal",
+        "type_field": "State_cd",
+        "url": "https://maps.bexar.org/arcgis/rest/services/Parcels/MapServer/0?f=json",
+        "final_url": "https://maps.bexar.org/arcgis/rest/services/Parcels/MapServer/0?f=json",
+        "status_code": 200
+      },
+      "clerk_candidates": [
+        {
+          "method": "bulk_dataset",
+          "subtype": "clerk_bulk",
+          "url": "https://portal-txbexar.tylertech.cloud/Portal/",
+          "final_url": "https://portal-txbexar.tylertech.cloud/Portal/",
+          "status_code": 200,
+          "daily_summaries_available": 0,
+          "latest_summary": null
+        },
+        {
+          "method": "unknown",
+          "subtype": "",
+          "url": "https://apps.bexar.org/LitSearch/",
+          "final_url": "https://apps.bexar.org/LitSearch/",
+          "status_code": 200
+        }
+      ],
+      "tax_candidates": [
+        {
+          "method": "api",
+          "subtype": "arcgis_rest",
+          "layer": "Parcels",
+          "field_count": 39,
+          "fields": [
+            "OBJECTID",
+            "PropID",
+            "Situs",
+            "Owner",
+            "AddrLn1",
+            "AddrLn2",
+            "AddrLn3",
+            "AddrCity",
+            "AddrSt",
+            "Country",
+            "Zip",
+            "Zip4",
+            "DBA",
+            "AcctNumb",
+            "LglDesc",
+            "LandVal",
+            "ImprVal",
+            "TotVal",
+            "Nbhd",
+            "GBA",
+            "TOT_GBA",
+            "YrBlt",
+            "Stories",
+            "NumRooms",
+            "Houses",
+            "Detached",
+            "State_cd",
+            "LglAcres",
+            "Acres",
+            "TaxUnits",
+            "Exempts",
+            "IS_UDI",
+            "UDIPARNT",
+            "Roll",
+            "SWP",
+            "PropUse",
+            "Shape",
+            "Shape.STArea()",
+            "Shape.STLength()"
+          ],
+          "owner_field": "Owner",
+          "apn_field": "PropID",
+          "value_field": "TotVal",
+          "type_field": "State_cd",
+          "url": "https://maps.bexar.org/arcgis/rest/services/Parcels/MapServer/0?f=json",
+          "final_url": "https://maps.bexar.org/arcgis/rest/services/Parcels/MapServer/0?f=json",
+          "status_code": 200
+        }
+      ],
+      "recommended": {
+        "ingest": [
+          "bulk_dataset"
+        ],
+        "tax_lookup": [
+          "arcgis_rest"
+        ],
+        "note": "Do not write a portal scraper until bulk/API has been ruled out. Adapters are not registered until a probe-only county is promoted."
+      }
+    },
+    {
+      "county": "Maricopa",
+      "key": "maricopa",
+      "fips": "04013",
+      "state": "AZ",
+      "clerk": {
+        "method": "portal_scrape",
+        "subtype": "html_search",
+        "url": "https://www.superiorcourt.maricopa.gov/docket/civilcourtcases/casesearch.asp",
+        "final_url": "https://www.superiorcourt.maricopa.gov/docket/civilcourtcases/casesearch.asp",
+        "status_code": 200
+      },
+      "tax": {
+        "method": "api",
+        "subtype": "arcgis_rest",
+        "layer": "Parcels",
+        "field_count": 57,
+        "fields": [
+          "OBJECTID",
+          "Shape",
+          "APN",
+          "FLOOR",
+          "BOOK",
+          "MAP",
+          "ITEM",
+          "OWNER_NAME",
+          "MAIL_ADDR1",
+          "MAIL_ADDR2",
+          "MAIL_CITY",
+          "MAIL_STATE",
+          "MAIL_ZIP",
+          "PHYSICAL_STREET_NUM",
+          "PHYSICAL_STREET_DIR",
+          "PHYSICAL_STREET_NAME",
+          "PHYSICAL_STREET_TYPE",
+          "PHYSICAL_SUITE",
+          "PHYSICAL_CITY",
+          "PHYSICAL_ZIP",
+          "Shape_Length",
+          "Shape_Area",
+          "APN_DASH",
+          "LONGITUDE",
+          "LATITUDE",
+          "PHYSICAL_ADDRESS",
+          "MAIL_ADDRESS",
+          "MAIL_CNTRY",
+          "PHYSICAL_STREET_SUFFIX",
+          "PHYSICAL_STREET_POSTDIR",
+          "DEED_NUMBER",
+          "DEED_DATE",
+          "SALE_DATE",
+          "SALE_PRICE",
+          "MCRNUM",
+          "SUBNAME",
+          "LAND_SIZE",
+          "LOT_NUM",
+          "STR",
+          "CONST_YEAR"
+        ],
+        "owner_field": "OWNER_NAME",
+        "apn_field": "APN",
+        "value_field": "FCV_CUR",
+        "type_field": "",
+        "url": "https://gis.mcassessor.maricopa.gov/arcgis/rest/services/Parcels/MapServer/0?f=json",
+        "final_url": "https://gis.mcassessor.maricopa.gov/arcgis/rest/services/Parcels/MapServer/0?f=json",
+        "status_code": 200
+      },
+      "clerk_candidates": [
+        {
+          "method": "portal_scrape",
+          "subtype": "html_search",
+          "url": "https://www.superiorcourt.maricopa.gov/docket/civilcourtcases/casesearch.asp",
+          "final_url": "https://www.superiorcourt.maricopa.gov/docket/civilcourtcases/casesearch.asp",
+          "status_code": 200
+        }
+      ],
+      "tax_candidates": [
+        {
+          "url": "https://mcassessor.maricopa.gov/search/property/?q=SMITH",
+          "method": "error",
+          "subtype": "request_error",
+          "error": "HTTPError HTTP 500"
+        },
+        {
+          "method": "api",
+          "subtype": "arcgis_rest",
+          "layer": "Parcels",
+          "field_count": 57,
+          "fields": [
+            "OBJECTID",
+            "Shape",
+            "APN",
+            "FLOOR",
+            "BOOK",
+            "MAP",
+            "ITEM",
+            "OWNER_NAME",
+            "MAIL_ADDR1",
+            "MAIL_ADDR2",
+            "MAIL_CITY",
+            "MAIL_STATE",
+            "MAIL_ZIP",
+            "PHYSICAL_STREET_NUM",
+            "PHYSICAL_STREET_DIR",
+            "PHYSICAL_STREET_NAME",
+            "PHYSICAL_STREET_TYPE",
+            "PHYSICAL_SUITE",
+            "PHYSICAL_CITY",
+            "PHYSICAL_ZIP",
+            "Shape_Length",
+            "Shape_Area",
+            "APN_DASH",
+            "LONGITUDE",
+            "LATITUDE",
+            "PHYSICAL_ADDRESS",
+            "MAIL_ADDRESS",
+            "MAIL_CNTRY",
+            "PHYSICAL_STREET_SUFFIX",
+            "PHYSICAL_STREET_POSTDIR",
+            "DEED_NUMBER",
+            "DEED_DATE",
+            "SALE_DATE",
+            "SALE_PRICE",
+            "MCRNUM",
+            "SUBNAME",
+            "LAND_SIZE",
+            "LOT_NUM",
+            "STR",
+            "CONST_YEAR"
+          ],
+          "owner_field": "OWNER_NAME",
+          "apn_field": "APN",
+          "value_field": "FCV_CUR",
+          "type_field": "",
+          "url": "https://gis.mcassessor.maricopa.gov/arcgis/rest/services/Parcels/MapServer/0?f=json",
+          "final_url": "https://gis.mcassessor.maricopa.gov/arcgis/rest/services/Parcels/MapServer/0?f=json",
+          "status_code": 200
+        }
+      ],
+      "recommended": {
+        "ingest": [
+          "portal_scrape"
+        ],
+        "tax_lookup": [
+          "arcgis_rest"
+        ],
+        "note": "Do not write a portal scraper until bulk/API has been ruled out. Adapters are not registered until a probe-only county is promoted."
+      }
+    }
+  ],
+  "catalog": [
+    {
+      "key": "harris",
+      "fips": "48201",
+      "name": "Harris"
+    },
+    {
+      "key": "dallas",
+      "fips": "48113",
+      "name": "Dallas"
+    },
+    {
+      "key": "tarrant",
+      "fips": "48439",
+      "name": "Tarrant"
+    },
+    {
+      "key": "bexar",
+      "fips": "48029",
+      "name": "Bexar"
+    },
+    {
+      "key": "maricopa",
+      "fips": "04013",
+      "name": "Maricopa"
+    }
+  ]
+}

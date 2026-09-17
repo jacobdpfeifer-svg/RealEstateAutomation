@@ -65,6 +65,17 @@ class TestDallasOdysseyFixtures(unittest.TestCase):
         self.assertTrue(all(c.filed_date >= date(2026, 8, 1) for c in cases))
         self.assertTrue(all(c.defendant_normalized for c in cases))
 
+    def test_load_fixture_cases_applies_case_type_filter(self) -> None:
+        kwargs = dict(
+            since=date(2026, 8, 1),
+            county_fips="48113",
+            plaintiff_terms=["DALLAS COUNTY TAX", "DALLAS COUNTY"],
+        )
+        kept = load_fixture_cases(FIXTURES, case_type_filter=["Tax", "Delinquent"], **kwargs)
+        dropped = load_fixture_cases(FIXTURES, case_type_filter=["OCV"], **kwargs)
+        self.assertGreaterEqual(len(kept), 2)
+        self.assertEqual(dropped, [])
+
     def test_clerk_adapter_uses_fixture_dir(self) -> None:
         counties = load_counties(ROOT / "config" / "counties.toml")
         cfg = counties["48113"]

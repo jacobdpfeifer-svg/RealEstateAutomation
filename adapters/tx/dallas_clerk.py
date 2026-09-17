@@ -57,6 +57,7 @@ class DallasClerkAdapter:
             since=since,
             county_fips=self.county_fips,
             plaintiff_terms=terms,
+            case_type_filter=self.cfg.case_type_filter,
         )
         if fixture_cases:
             cases.extend(fixture_cases)
@@ -66,6 +67,7 @@ class DallasClerkAdapter:
                 since,
                 terms,
                 county_fips=self.county_fips,
+                case_type_filter=self.cfg.case_type_filter,
             )
             seen = {c.case_number for c in cases}
             for case in live:

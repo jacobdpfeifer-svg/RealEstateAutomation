@@ -11,7 +11,7 @@ import requests
 
 from leads.models import CaseRecord
 from leads.http import SourceChangedError, SourceSession
-from leads.utils import case_dedupe_key, normalize_defendant, plaintiff_is_tax_suit
+from leads.utils import case_dedupe_key, case_type_matches, normalize_defendant, plaintiff_is_tax_suit
 
 USER_AGENT = "re-tax-leads/0.1"
 DEFAULT_PORTAL = "https://courtsportal.dallascounty.org/DALLASPROD"
@@ -157,6 +157,7 @@ def row_to_case_record(
     county_fips: str,
     plaintiff_terms: list[str],
     source_url: str,
+    case_type_filter: list[str] | None = None,
 ) -> CaseRecord | None:
     case_number = (row.get("case_number") or "").strip()
     if not case_number:
@@ -180,6 +181,9 @@ def row_to_case_record(
             plaintiff = plaintiff_terms[0]
     if not defendant:
         return None
+    case_type = row.get("case_type") or "Tax"
+    if not case_type_matches(case_type, case_type_filter):
+        return None
     now = datetime.utcnow()
     return CaseRecord(
         id=None,
@@ -188,7 +192,7 @@ def row_to_case_record(
         plaintiff=plaintiff or plaintiff_terms[0],
         defendant_raw=defendant,
         defendant_normalized=normalize_defendant(defendant),
-        case_type=row.get("case_type") or "Tax",
+        case_type=case_type,
         filed_date=filed,
         status=row.get("status") or "",
         source_url=source_url,
@@ -203,20 +207,27 @@ def load_fixture_cases(
     since: date,
     county_fips: str,
     plaintiff_terms: list[str],
+    case_type_filter: list[str] | None = None,
 ) -> list[CaseRecord]:
     """Load CaseRecords from saved Odyssey HTML fixtures under fixture_dir."""
     if not fixture_dir.exists():
         return []
     cases: list[CaseRecord] = []
     seen: set[str] = set()
-    for path in sorted(fixture_dir.glob("*.html")):
+    paths = sorted(fixture_dir.glob("*.html"))
+    recognized = False
+    for path in paths:
         html = path.read_text(encoding="utf-8", errors="replace")
-        for row in parse_smart_search_results(html):
+        rows = parse_smart_search_results(html)
+        recognized = recognized or bool(rows) or bool(re.search(
+            r"no (?:cases|results|records) (?:were )?found", _cell_text(html), re.I))
+        for row in rows:
             case = row_to_case_record(
                 row,
                 county_fips=county_fips,
                 plaintiff_terms=plaintiff_terms,
                 source_url=str(path),
+                case_type_filter=case_type_filter,
             )
             if not case or case.filed_date < since:
                 continue
@@ -224,6 +235,8 @@ def load_fixture_cases(
                 continue
             seen.add(case.case_number)
             cases.append(case)
+    if paths and not recognized:
+        raise SourceChangedError("Saved Odyssey HTML has no recognized results or empty-result message")
     return cases
 
 
@@ -360,6 +373,7 @@ class DallasOdysseyClient:
         *,
         county_fips: str,
         queries: list[str] | None = None,
+        case_type_filter: list[str] | None = None,
     ) -> list[CaseRecord]:
         queries = queries or [f"{t}*" for t in plaintiff_terms[:2]]
         today = date.today()
@@ -380,6 +394,7 @@ class DallasOdysseyClient:
                     county_fips=county_fips,
                     plaintiff_terms=plaintiff_terms,
                     source_url=self.search_url,
+                    case_type_filter=case_type_filter,
                 )
                 if not case or case.filed_date < since:
                     continue

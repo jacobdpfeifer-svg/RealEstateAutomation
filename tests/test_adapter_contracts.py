@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import unittest
+import tempfile
 from datetime import date
 from pathlib import Path
 from unittest.mock import Mock, patch
@@ -11,7 +12,7 @@ import requests
 
 from adapters.platforms.arcgis_owner import ArcGISConfig, ArcGISOwnerSearch
 from adapters.platforms.dcad_owner import DCADOwnerSearch
-from adapters.platforms.dallas_odyssey import DallasOdysseyClient
+from adapters.platforms.dallas_odyssey import DallasOdysseyClient, load_fixture_cases
 from adapters.platforms.harris_bulk_civil import parse_case_summary_tsv, pick_summary_files
 from adapters.registry import load_counties
 from adapters.tx.dallas_clerk import DallasClerkAdapter
@@ -98,6 +99,16 @@ class TestSourceContracts(unittest.TestCase):
         with self.assertRaises(SourceChangedError):
             pick_summary_files(date(2026, 1, 1), "<html>Maintenance</html>")
         self.assertEqual(pick_summary_files(date(2026, 2, 1), "DownloadDoc('Civil\\\\CaseSummaryMods_Daily-2026-01-01.txt')"), [])
+
+    def test_saved_odyssey_unrecognized_html_is_not_zero_success(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "results.html"
+            path.write_text("<html>Complete CAPTCHA</html>")
+            kwargs = dict(since=date(2026, 1, 1), county_fips="48113", plaintiff_terms=["DALLAS COUNTY"])
+            with self.assertRaises(SourceChangedError):
+                load_fixture_cases(Path(directory), **kwargs)
+            path.write_text("No cases found")
+            self.assertEqual(load_fixture_cases(Path(directory), **kwargs), [])
 
     def test_odyssey_challenge_is_not_an_empty_search(self):
         client = DallasOdysseyClient(session=Mock())

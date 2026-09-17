@@ -55,6 +55,24 @@ def plaintiff_is_tax_suit(plaintiff: str, terms: Iterable[str]) -> bool:
     return False
 
 
+def case_type_matches(case_type: str, filters: Iterable[str] | None) -> bool:
+    """True when configured case_type_filter allows this source type.
+
+    Empty filters mean no type restriction. Blank source types are kept so
+    plaintiff matching remains the primary scope when the clerk omits type.
+    Otherwise a filter term must appear as a case-insensitive substring of
+    the source type (so 'Tax' matches 'TAX' / 'Tax Delinquent', 'OCV' matches 'OCV').
+    """
+    terms = [str(term).strip() for term in (filters or []) if str(term).strip()]
+    if not terms:
+        return True
+    value = (case_type or "").strip()
+    if not value:
+        return True
+    upper = value.upper()
+    return any(term.upper() in upper for term in terms)
+
+
 def parse_since_days(since: str) -> int:
     since = since.strip().lower()
     if since.endswith("d"):

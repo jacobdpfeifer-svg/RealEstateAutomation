@@ -13,10 +13,11 @@ from unittest.mock import Mock, patch
 import requests
 
 from leads import db
-from leads.cli import build_parser, cmd_run
+from leads.cli import build_parser, cmd_review, cmd_run, cmd_validate
+from leads.validate import run_phase1_validation
 from leads.models import CaseRecord, ContactRecord, PropertyRecord
 from leads.pipeline import Pipeline
-from leads.review import retry_lead
+from leads.review import retry_lead, approve_lead, reject_lead, skip_lead
 from leads.secrets import load_secrets
 from leads.utils import write_private_text
 
@@ -55,6 +56,7 @@ class TestEnrichmentReliability(unittest.TestCase):
         self.tax = Mock()
         self.tax.search_by_owner.return_value = [property_match()]
         self.skip = Mock()
+        self.skip.name = "test"
         self.skip.trace.return_value = [contact()]
         self.tax_patch = patch("leads.pipeline.get_tax_adapter", return_value=self.tax)
         self.skip_patch = patch("leads.pipeline.get_skip_provider_for_county", return_value=self.skip)
@@ -64,6 +66,27 @@ class TestEnrichmentReliability(unittest.TestCase):
         self.addCleanup(self.skip_patch.stop)
         self.pipe = Pipeline(self.conn)
         self.pipe.max_attempts = 3
+
+    def test_enrich_cap_limits_calls_and_resume_preserves_backlog(self):
+        seed(self.conn, "TEST-2")
+        seed(self.conn, "TEST-3")
+        pipe = Pipeline(self.conn, max_enrich=1)
+        result = pipe.enrich_pending("harris")
+        self.assertEqual((result["processed"], result["deferred"]), (1, 2))
+        self.assertEqual(pipe.enrich_pending()["processed"], 0)
+        self.assertEqual(self.skip.trace.call_count, 1)
+        self.assertEqual(Pipeline(self.conn, max_enrich=0).enrich_pending()["processed"], 0)
+        self.assertEqual(Pipeline(self.conn, max_enrich=1).enrich_pending()["processed"], 1)
+        self.assertEqual(self.skip.trace.call_count, 2)
+
+    def test_failed_enrichment_consumes_cap(self):
+        seed(self.conn, "TEST-2")
+        self.skip.trace.side_effect = requests.Timeout()
+        result = Pipeline(self.conn, max_enrich=1).enrich_pending()
+        self.assertEqual((result["errors"], result["deferred"]), (1, 1))
+        self.assertEqual(self.skip.trace.call_count, 1)
+        with self.assertRaises(ValueError):
+            Pipeline(self.conn, max_enrich=-1)
 
     def test_failures_rollback_then_dead_letter_and_explicit_retry(self):
         self.skip.trace.side_effect = requests.Timeout("secret owner=Jane, key=hidden")
@@ -160,6 +183,13 @@ class TestLocalDatabaseSafety(unittest.TestCase):
                 self.assertIsInstance(conn, sqlite3.Connection)
             pg.assert_not_called()
 
+    def test_nonexistent_review_decision_does_not_create_ledger_event(self):
+        with db.db_session(":memory:") as conn:
+            for action in (approve_lead, reject_lead, skip_lead):
+                with self.subTest(action=action.__name__), self.assertRaises(ValueError):
+                    action(conn, 999, "test")
+            self.assertEqual(conn.execute("SELECT COUNT(*) FROM outcome_event").fetchone()[0], 0)
+
     def test_private_export_and_empty_environment_precedence(self):
         with tempfile.TemporaryDirectory() as temp:
             path = Path(temp) / "output.csv"
@@ -192,7 +222,57 @@ class TestCLIOutcomes(unittest.TestCase):
             self.assertEqual(run.call_count, 2)
         self.assertNotIn("SECRET", errors.getvalue())
 
+    def test_db_position_and_negative_cap(self):
+        parser = build_parser()
+        for argv in (["--db", "scratch.db", "state"], ["state", "--db", "scratch.db"],
+                     ["review", "list", "--db", "scratch.db"],
+                     ["--db", "scratch.db", "review", "list"]):
+            self.assertEqual(parser.parse_args(argv).db, "scratch.db")
+        with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+            parser.parse_args(["run", "--county", "harris", "--max-enrich", "-1"])
+
+    def test_all_county_cap_is_shared(self):
+        args = build_parser().parse_args(["--db", ":memory:", "run", "--all-enabled", "--max-enrich", "5"])
+        budgets = []
+        def run(pipe, county, since, dry_run=False):
+            budgets.append(pipe.max_enrich - pipe.enrich_attempted)
+            pipe.enrich_attempted += min(3, budgets[-1])
+            return {"enrich": {"errors": 0}}
+        with patch.object(Pipeline, "run_all", run), redirect_stdout(io.StringIO()):
+            self.assertEqual(cmd_run(args), 0)
+        self.assertEqual(budgets, [5, 2])
+
     def test_enrichment_error_is_nonzero(self):
         args = build_parser().parse_args(["--db", ":memory:", "run", "--county", "harris"])
         with patch.object(Pipeline, "run_all", return_value={"enrich": {"errors": 1}}), redirect_stdout(io.StringIO()):
             self.assertEqual(cmd_run(args), 1)
+
+    def test_missing_review_lead_is_clean_error(self):
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "scratch.db"
+            with db.db_session(path):
+                pass
+            args = build_parser().parse_args(["review", "reject", "999", "--note", "missing", "--db", str(path)])
+            errors = io.StringIO()
+            with redirect_stdout(io.StringIO()), redirect_stderr(errors):
+                self.assertEqual(cmd_review(args), 1)
+            self.assertIn("Lead not found: 999", errors.getvalue())
+            self.assertNotIn("Traceback", errors.getvalue())
+
+
+class TestValidationOutcomes(unittest.TestCase):
+    def test_capped_validation_is_not_daily_ready_with_deferred_work(self):
+        checks = {"secrets": {"BATCHDATA_API_KEY": "present"}, "dallas_clerk_live": False,
+                  "dallas_fixtures": {"html_files": 1}}
+        runs = [{"ok": True, "result": {"ingest": {"found": 1}}},
+                {"ok": True, "result": {"enrich": {"errors": 0, "deferred": 1}}}]
+        with tempfile.TemporaryDirectory() as directory, patch("leads.validate.preflight", return_value=checks), patch("leads.validate._run_county", side_effect=runs):
+            result = run_phase1_validation(Path(directory) / "scratch.db", max_enrich=1)
+        self.assertFalse(result["ready_for_daily"])
+        self.assertEqual(result["max_enrich"], 1)
+
+    def test_validation_exit_includes_harris_failure(self):
+        args = build_parser().parse_args(["validate", "--db", "scratch.db"])
+        report = {"runs": {"harris_dry_run": {"ok": False}, "dallas": {"ok": True}}}
+        with patch("leads.cli.run_phase1_validation", return_value=report), redirect_stdout(io.StringIO()):
+            self.assertEqual(cmd_validate(args), 1)

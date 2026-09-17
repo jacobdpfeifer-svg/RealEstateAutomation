@@ -8,6 +8,8 @@ state = "TX"
 enabled = true
 plaintiff = "HARRIS COUNTY"
 plaintiff_terms = ["HARRIS COUNTY TAX ASSESSOR-COLLECTOR", "HARRIS COUNTY", "COUNTY OF HARRIS"]
+# Case-insensitive substrings of source type (Harris toac/cs_typ, Dallas Case Type).
+# Blank source types are kept; plaintiff matching remains the primary scope.
 case_type_filter = ["Tax", "Delinquent", "OCV"]
 ingest = ["bulk_dataset"]
 tax_lookup = ["arcgis_rest"]

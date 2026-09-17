@@ -23,6 +23,7 @@ class HarrisClerkAdapter:
             since=since,
             plaintiff_terms=self.cfg.plaintiff_terms,
             county_fips=self.county_fips,
+            case_type_filter=self.cfg.case_type_filter,
         )
         self._cache = cases
         return cases

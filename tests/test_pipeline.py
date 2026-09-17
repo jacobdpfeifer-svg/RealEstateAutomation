@@ -19,7 +19,7 @@ from adapters.tx.harris_tax import HarrisTaxAdapter
 from leads import db
 from leads.pipeline import Pipeline
 from leads.review import approve_lead, export_csv, paste_contact
-from leads.utils import normalize_defendant, plaintiff_is_tax_suit
+from leads.utils import case_type_matches, normalize_defendant, plaintiff_is_tax_suit
 
 FIXTURES = Path(__file__).parent / "fixtures" / "harris"
 
@@ -47,6 +47,24 @@ class TestHarrisBulkCivil(unittest.TestCase):
                 ["HARRIS COUNTY"],
             )
         )
+
+    def test_case_type_filter_is_applied(self) -> None:
+        self.assertTrue(case_type_matches("OCV", ["Tax", "Delinquent", "OCV"]))
+        self.assertTrue(case_type_matches("TAX", ["Tax"]))
+        self.assertTrue(case_type_matches("Tax Delinquent", ["Delinquent"]))
+        self.assertTrue(case_type_matches("", ["Tax"]))
+        self.assertTrue(case_type_matches("OCV", []))
+        self.assertFalse(case_type_matches("MVA", ["Tax", "OCV"]))
+        self.assertFalse(case_type_matches("OCV", ["Tax"]))
+        text = (FIXTURES / "case_summary_sample.tsv").read_text(encoding="utf-8")
+        rows = parse_case_summary_tsv(text)
+        terms = ["HARRIS COUNTY TAX ASSESSOR-COLLECTOR"]
+        since = date(2025, 1, 1)
+        with_config = filter_tax_suits(rows, terms, since, ["Tax", "Delinquent", "OCV"])
+        tax_only = filter_tax_suits(rows, terms, since, ["Tax"])
+        self.assertGreater(len(with_config), 0)
+        self.assertTrue(all((r.get("toac") or "").upper() == "OCV" for r in with_config))
+        self.assertEqual(tax_only, [])
 
 
 class TestHarrisArcGIS(unittest.TestCase):
@@ -140,8 +158,10 @@ class TestCountyConfig(unittest.TestCase):
         harris = counties["48201"]
         self.assertEqual(harris.state, "TX")
         self.assertEqual(harris.ingest, ["bulk_dataset"])
+        self.assertEqual(harris.case_type_filter, ["Tax", "Delinquent", "OCV"])
         dallas = counties["48113"]
         self.assertEqual(dallas.ingest, ["portal_scrape"])
+        self.assertEqual(dallas.case_type_filter, ["Tax", "Delinquent"])
         self.assertFalse(counties["tarrant"].enabled)
         self.assertFalse(counties["bexar"].enabled)
         self.assertFalse(counties["maricopa"].enabled)

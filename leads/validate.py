@@ -62,6 +62,7 @@ def run_phase1_validation(
     *,
     since: str = "60d",
     skip_enrich: bool = False,
+    max_enrich: int | None = 5,
 ) -> dict[str, Any]:
     """
     Dry-run Harris (live bulk listing) and run Dallas from fixtures into a
@@ -78,11 +79,12 @@ def run_phase1_validation(
         "since": since,
         "since_date": since_date.isoformat(),
         "db": str(path),
+        "max_enrich": max_enrich,
         "runs": {},
     }
 
     with db.db_session(path) as conn:
-        pipe = Pipeline(conn)
+        pipe = Pipeline(conn, max_enrich=max_enrich)
         report["runs"]["harris_dry_run"] = _run_county(pipe, "harris", since_date, dry_run=True)
         dallas_dry = skip_enrich
         report["runs"]["dallas"] = _run_county(pipe, "dallas", since_date, dry_run=dallas_dry)
@@ -105,6 +107,7 @@ def run_phase1_validation(
     report["ready_for_daily"] = (
         not skip_enrich and not blockers
         and all(run.get("ok") and not run.get("result", {}).get("enrich", {}).get("errors", 0)
+                and not run.get("result", {}).get("enrich", {}).get("deferred", 0)
                 for run in report["runs"].values())
     )
     return report

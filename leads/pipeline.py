@@ -15,7 +15,11 @@ MATCH_AUTO_THRESHOLD = 0.85
 
 
 class Pipeline:
-    def __init__(self, conn, config_path=None) -> None:
+    def __init__(self, conn, config_path=None, *, max_enrich: int | None = None) -> None:
+        if max_enrich is not None and max_enrich < 0:
+            raise ValueError("max_enrich must be nonnegative")
+        self.max_enrich = max_enrich
+        self.enrich_attempted = 0
         self.conn = conn
         self.config_path = config_path
         self.max_attempts = int(os.environ.get("LEADS_MAX_ENRICH_ATTEMPTS", "3"))
@@ -71,6 +75,7 @@ class Pipeline:
             cfg = load_counties(self.config_path)[county_key.lower()]
             query += " AND c.county_fips = ?"
             params = (cfg.fips,)
+        query += " ORDER BY l.id"
         rows = self.conn.execute(query, params).fetchall()
         enriched = 0
         needs_review = 0
@@ -78,6 +83,9 @@ class Pipeline:
         dead_letter = 0
         processed = 0
         for row in rows:
+            if self.max_enrich is not None and self.enrich_attempted >= self.max_enrich:
+                break
+            self.enrich_attempted += 1
             self._stage = "owner_match"
             self.conn.execute("SAVEPOINT enrich_lead")
             try:
@@ -109,7 +117,7 @@ class Pipeline:
             self.conn.commit()  # One lead is the durable resume boundary.
             processed += 1
         return {"processed": processed, "enriched": enriched, "needs_review": needs_review,
-                "errors": errors, "dead_letter": dead_letter}
+                "errors": errors, "dead_letter": dead_letter, "deferred": len(rows) - processed}
 
     def _enrich_case(self, case_id: int, defendant_norm: str, defendant_raw: str) -> str:
         case_row = self.conn.execute(
@@ -175,6 +183,7 @@ class Pipeline:
         street = parts[0].strip() if parts else best.situs_address
 
         self._stage = "skip_trace"
+        event("skip_trace_attempt", provider=skip.name, case_id=case_id)
         contacts = skip.trace(
             name=best.owner_of_record or defendant_raw,
             address=street,

@@ -10,6 +10,8 @@ from urllib.parse import urlsplit
 
 import requests
 
+from leads.observability import event
+
 
 class SourceChangedError(RuntimeError):
     """A source no longer satisfies the adapter's expected data contract."""
@@ -50,6 +52,7 @@ class SourceSession(requests.Session):
             time.sleep(delay)
         self._last_request[host] = time.monotonic()
         response = super().send(request, **kwargs)
+        event("http_response", host=host, method=request.method, status=response.status_code)
         if response.status_code in (401, 403):
             self._blocked_hosts.add(host)
         return response
