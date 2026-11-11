@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+import tempfile
 import unittest
 from datetime import date
 from pathlib import Path
@@ -47,6 +48,13 @@ class TestDCADParsing(unittest.TestCase):
 
 
 class TestDallasOdysseyFixtures(unittest.TestCase):
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.clerk_dir = Path(directory.name)
+        name = "odyssey_smart_search_sample.html"
+        (self.clerk_dir / name).write_bytes((FIXTURES / name).read_bytes())
+
     def test_parse_smart_search_fixture(self) -> None:
         html = (FIXTURES / "odyssey_smart_search_sample.html").read_text(encoding="utf-8")
         rows = parse_smart_search_results(html)
@@ -56,7 +64,7 @@ class TestDallasOdysseyFixtures(unittest.TestCase):
 
     def test_load_fixture_cases_filters_since(self) -> None:
         cases = load_fixture_cases(
-            FIXTURES,
+            self.clerk_dir,
             since=date(2026, 8, 1),
             county_fips="48113",
             plaintiff_terms=["DALLAS COUNTY TAX", "DALLAS COUNTY"],
@@ -71,15 +79,15 @@ class TestDallasOdysseyFixtures(unittest.TestCase):
             county_fips="48113",
             plaintiff_terms=["DALLAS COUNTY TAX", "DALLAS COUNTY"],
         )
-        kept = load_fixture_cases(FIXTURES, case_type_filter=["Tax", "Delinquent"], **kwargs)
-        dropped = load_fixture_cases(FIXTURES, case_type_filter=["OCV"], **kwargs)
+        kept = load_fixture_cases(self.clerk_dir, case_type_filter=["Tax", "Delinquent"], **kwargs)
+        dropped = load_fixture_cases(self.clerk_dir, case_type_filter=["OCV"], **kwargs)
         self.assertGreaterEqual(len(kept), 2)
         self.assertEqual(dropped, [])
 
     def test_clerk_adapter_uses_fixture_dir(self) -> None:
         counties = load_counties(ROOT / "config" / "counties.toml")
         cfg = counties["48113"]
-        adapter = DallasClerkAdapter(cfg, artifact_dir=FIXTURES)
+        adapter = DallasClerkAdapter(cfg, artifact_dir=self.clerk_dir)
         cases = adapter.search_tax_suits(date(2026, 8, 1))
         self.assertGreaterEqual(len(cases), 2)
 

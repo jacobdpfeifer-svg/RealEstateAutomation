@@ -89,12 +89,15 @@ def parse_smart_search_results(html: str) -> list[dict[str, str]]:
         r'<a[^>]+href=["\']([^"\']*Case(?:Detail|/CaseDetail)[^"\']*)["\'][^>]*>\s*([^<]+?)\s*</a>',
         re.I,
     )
-    for href, case_no in link_pattern.findall(html):
+    links = list(link_pattern.finditer(html))
+    for position, link in enumerate(links):
+        href, case_no = link.groups()
         case_number = _cell_text(case_no)
         if not case_number or len(case_number) < 4:
             continue
-        idx = html.find(href)
-        window = html[idx : idx + 2500] if idx >= 0 else ""
+        # Never borrow a filing date or defendant from the next case.
+        end = links[position + 1].start() if position + 1 < len(links) else len(html)
+        window = html[link.end() : min(end, link.end() + 2500)]
         filed = ""
         dm = re.search(
             r"(?:File(?:d)?\s*Date|Filing\s*Date)[^0-9]*(\d{1,2}/\d{1,2}/\d{4})",
@@ -227,6 +230,7 @@ def load_fixture_cases(
     county_fips: str,
     plaintiff_terms: list[str],
     case_type_filter: list[str] | None = None,
+    reject_samples: bool = False,
 ) -> list[CaseRecord]:
     """Load CaseRecords from saved Odyssey HTML fixtures under fixture_dir."""
     if not fixture_dir.exists():
@@ -234,12 +238,19 @@ def load_fixture_cases(
     cases: list[CaseRecord] = []
     seen: set[str] = set()
     paths = sorted(fixture_dir.glob("*.html"))
-    recognized = False
     for path in paths:
         html = path.read_text(encoding="utf-8", errors="replace")
+        if reject_samples and re.search(
+            r"Smart Search Results Fixture|Fixture rows for offline", html, re.I
+        ):
+            raise SourceChangedError("Saved Odyssey input is a bundled sample; provide authentic court captures")
+        if _is_access_challenge(html):
+            raise SourceChangedError("Saved Odyssey page contains an access challenge")
         rows = parse_smart_search_results(html)
-        recognized = recognized or bool(rows) or bool(re.search(
-            r"no (?:cases|results|records) (?:were )?found", _cell_text(html), re.I))
+        if not rows and not re.search(
+            r"no (?:cases|results|records) (?:were )?found", _cell_text(html), re.I
+        ):
+            raise SourceChangedError("Saved Odyssey page has no recognized results or empty-result message")
         for row in rows:
             case = row_to_case_record(
                 row,
@@ -254,8 +265,6 @@ def load_fixture_cases(
                 continue
             seen.add(case.case_number)
             cases.append(case)
-    if paths and not recognized:
-        raise SourceChangedError("Saved Odyssey HTML has no recognized results or empty-result message")
     return cases
 
 

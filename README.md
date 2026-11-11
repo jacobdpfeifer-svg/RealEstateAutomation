@@ -2,11 +2,28 @@
 
 End-to-end pipeline for tax suit leads: district clerk ingest → assessor match → skip trace → human review → CSV export.
 
+**Launch status (2026-09-17): research workflow works; outreach is not ready.**
+Production has 24 Harris leads and 2 Dallas sample leads, all awaiting review,
+with zero contacts. Eight Harris leads have property matches to investigate.
+Buyer discovery, matching, email drafting and suppression are not implemented.
+See [launch review and today's sequence](docs/LAUNCH_REVIEW.md). Refresh inventory
+with `.venv/bin/python3 -m leads readiness`; it uses a read-only transaction,
+does not migrate schema, and makes no provider calls. Exit 0 means the inspection
+succeeded, not that outreach is approved.
+
+The [contact implementation audit](docs/CONTACT_IMPLEMENTATION_AUDIT.md) records
+tested behavior and remaining verification gaps. `review research-hints` uses a
+read-only database session and only prints links. CSV exports quote all fields
+and prefix formula-like text with an apostrophe (including `+` phone numbers);
+account for that representation in CRM imports. Spreadsheet save/reopen may
+remove escaping, so the export is not universally safe across consumers.
+
 Marketplace roadmap (buyer pipeline, matching, outreach): see [`docs/PROJECT_PLAN.md`](docs/PROJECT_PLAN.md). Implement phases in order — do not jump ahead.
 
 **Phase 1 geography:** Texas — Harris (48201) + Dallas (48113)
 
-**Phase 2 probes (disabled, no adapters yet):** Tarrant (48439), Bexar (48029), Maricopa AZ (04013)
+**Expansion (disabled):** Tarrant (48439), Bexar (48029), Maricopa AZ (04013).
+Tax adapters exist; authentic court input / suitable filing models remain unresolved.
 
 ## Setup
 
@@ -63,6 +80,7 @@ python3 -m leads state
 python3 -m leads review list --status pending
 python3 -m leads review approve 1 --note "verified owner"
 python3 -m leads review paste 2 --name "Jane Doe" --phone "7135550100"
+python3 -m leads review research-hints 2
 
 # Export approved leads for dialer/CRM
 python3 -m leads export --status approved -o exports/approved.csv
@@ -72,7 +90,7 @@ python3 -m leads export --status approved -o exports/approved.csv
 
 - **Harris Stage 1:** Bulk civil case summaries from [District Clerk Public Datasets](https://www.hcdistrictclerk.com/common/e-services/PublicDatasets.aspx) (form POST, not interactive scrape)
 - **Harris Stage 2:** HCAD ArcGIS REST owner search
-- **Dallas Stage 1:** Tyler Odyssey Smart Search (`courtsportal.dallascounty.org`) — reCAPTCHA for anonymous use, or save result HTML under `artifacts/raw/dallas/clerk/`
+- **Dallas Stage 1:** Tyler Odyssey Smart Search (`courtsportal.dallascounty.org`) — save authentic result HTML under `artifacts/raw/dallas/clerk/captures/`; live access remains explicitly gated
 - **Dallas Stage 2:** DCAD ASP.NET owner search (`searchowner.aspx`)
 - **Skip trace:** BatchData v3 (`BATCHDATA_API_KEY`); falls back to stub if the key is missing
 - **Phase 2:** Tarrant/Bexar/Maricopa are in `config/counties.toml` as `enabled = false`. Probe them with `python3 scripts/bootstrap_county.py --county next` before writing adapters.
@@ -83,8 +101,15 @@ Saved HTML is the default clerk input. For permitted manual portal use:
 
 1. Open Smart Search on the Dallas Courts Portal
 2. Search business name `DALLAS COUNTY TAX*` with a file-date range
-3. Save the results HTML to `artifacts/raw/dallas/clerk/*.html`
+3. Save every rendered results page to `artifacts/raw/dallas/clerk/captures/*.html`, with a provenance note recording query, filing window, capture time and page coverage.
 4. Re-run `python3 -m leads run --county dallas`
+
+The default directory deliberately excludes the old bundled sample. The CLI also
+rejects the bundled sample's content markers even if the file is renamed or an
+environment override points to it. Each HTML page must contain recognizable
+results or a legitimate empty-result message. This detects known bad input; it
+does not certify an arbitrary capture's authenticity or completeness. Direct
+adapter tests can still supply their own fixture directory.
 
 ## Phase 1 validation
 
@@ -92,7 +117,7 @@ Saved HTML is the default clerk input. For permitted manual portal use:
 python3 -m leads validate
 ```
 
-Uses Dallas Odyssey HTML under `artifacts/raw/dallas/clerk/` by default. Harris is dry-run against the live bulk dataset. Skip-trace uses BatchData if `BATCHDATA_API_KEY` is set, otherwise the stub. Results go to `artifacts/phase1_validation.db` (not `leads.db`).
+Uses authentic Dallas Odyssey HTML under `artifacts/raw/dallas/clerk/captures/` by default. Harris is dry-run against the live bulk dataset. Skip-trace uses BatchData if `BATCHDATA_API_KEY` is set, otherwise the stub. Results go to `artifacts/phase1_validation.db` (not `leads.db`).
 
 Last run (2026-09-15, no API keys): Harris live bulk dry-run found 126 tax suits in 60d; Dallas fixture ingest wrote 3 cases; DCAD enrich populated `property_type` / `total_value` and queued all 3 for review (stub skip-trace, no contacts). Set `BATCHDATA_API_KEY` before treating this as daily-ready.
 

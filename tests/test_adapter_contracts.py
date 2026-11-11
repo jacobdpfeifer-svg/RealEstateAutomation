@@ -190,10 +190,14 @@ class TestSourceContracts(unittest.TestCase):
             self.assertEqual(client.search_tax_suits(date(2026, 1, 1), ["DALLAS COUNTY"], county_fips="48113"), [])
 
     def test_dallas_keys_do_not_implicitly_enable_live_search(self):
-        adapter = DallasClerkAdapter(load_counties()["dallas"], artifact_dir=FIXTURES / "dallas")
-        with patch.dict("os.environ", {"ANTICAPTCHA_API_KEY": "test", "DALLAS_RECAPTCHA_TOKEN": "test", "DALLAS_CLERK_LIVE_ENABLED": ""}):
-            self.assertFalse(adapter._can_live_search())
-            self.assertEqual(adapter.search_tax_suits(date(2099, 1, 1)), [])
+        with tempfile.TemporaryDirectory() as directory:
+            (Path(directory) / "results.html").write_text("No cases found")
+            adapter = DallasClerkAdapter(load_counties()["dallas"], artifact_dir=Path(directory))
+            with patch.dict("os.environ", {"ANTICAPTCHA_API_KEY": "test", "DALLAS_RECAPTCHA_TOKEN": "test", "DALLAS_CLERK_LIVE_ENABLED": ""}):
+                self.assertFalse(adapter._can_live_search())
+                with patch.object(adapter.client, "search_tax_suits") as live:
+                    self.assertEqual(adapter.search_tax_suits(date(2099, 1, 1)), [])
+                live.assert_not_called()
 
     def test_bexar_keys_do_not_implicitly_enable_live_search(self):
         from adapters.tx.bexar_clerk import BexarClerkAdapter

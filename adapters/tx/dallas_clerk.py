@@ -18,7 +18,7 @@ class DallasClerkAdapter:
 
     Explicitly enabled live portal access requires reCAPTCHA (ANTICAPTCHA_API_KEY or
     DALLAS_RECAPTCHA_TOKEN). When those are unset, the adapter reads saved
-    HTML fixtures from artifacts/raw/dallas/clerk/ (or DALLAS_CLERK_FIXTURE_DIR).
+    HTML captures from artifacts/raw/dallas/clerk/captures/ (or DALLAS_CLERK_FIXTURE_DIR).
     """
 
     county_fips = "48113"
@@ -26,6 +26,8 @@ class DallasClerkAdapter:
 
     def __init__(self, cfg: CountyConfig, artifact_dir: Path | None = None) -> None:
         self.cfg = cfg
+        # Explicit constructor fixture input is for offline adapter tests only.
+        self.reject_samples = artifact_dir is None
         portal = cfg.raw.get(
             "clerk_portal_url",
             "https://courtsportal.dallascounty.org/DALLASPROD",
@@ -38,7 +40,7 @@ class DallasClerkAdapter:
         self.fixture_dir = Path(
             os.environ.get(
                 "DALLAS_CLERK_FIXTURE_DIR",
-                str(artifact_dir or root / "artifacts" / "raw" / "dallas" / "clerk"),
+                str(artifact_dir or root / "artifacts" / "raw" / "dallas" / "clerk" / "captures"),
             )
         )
         self.client = DallasOdysseyClient(portal_base=self.portal_url)
@@ -58,6 +60,7 @@ class DallasClerkAdapter:
             county_fips=self.county_fips,
             plaintiff_terms=terms,
             case_type_filter=self.cfg.case_type_filter,
+            reject_samples=self.reject_samples,
         )
         if fixture_cases:
             cases.extend(fixture_cases)

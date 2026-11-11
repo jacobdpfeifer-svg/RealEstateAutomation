@@ -37,7 +37,8 @@ def default_backend_name() -> str:
     return "postgres" if _is_postgres_url(_database_url()) else "sqlite"
 
 
-_NAMED_PARAM_RE = re.compile(r":(\w+)")
+# PostgreSQL native casts (::text, ::integer) are not named parameters.
+_NAMED_PARAM_RE = re.compile(r"(?<!:):(\w+)")
 
 
 def _to_pg_sql(sql: str) -> str:
@@ -273,6 +274,30 @@ def pipeline_lock(db_path: Path | str, *, disabled: bool = False):
         yield
     finally:
         os.close(fd)
+
+
+@contextmanager
+def read_only_session(db_path: Path | str | None = None) -> Generator[Connection, None, None]:
+    """Inspect an existing database without migrations, writes, or file creation."""
+    path = Path(db_path or DEFAULT_DB).resolve()
+    if path == DEFAULT_DB.resolve() and _is_postgres_url(_database_url()):
+        conn = PGConnection(_database_url())
+        try:
+            conn.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY")
+            yield conn
+        finally:
+            conn.rollback()
+            conn.close()
+    else:
+        conn = sqlite3.connect(path.as_uri() + "?mode=ro", uri=True)
+        conn.row_factory = sqlite3.Row
+        try:
+            conn.execute("PRAGMA query_only = ON")
+            conn.execute("BEGIN")
+            yield conn
+        finally:
+            conn.rollback()
+            conn.close()
 
 
 @contextmanager

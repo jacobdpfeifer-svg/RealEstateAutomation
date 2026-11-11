@@ -4,8 +4,10 @@ import csv
 import io
 from datetime import datetime
 
+from adapters.registry import load_counties
 from leads import db, ledger
 from leads.models import PipelineStatus
+from leads.research_hints import build_research_hints, looks_like_entity, parse_situs
 from providers.skip_trace.stub import contact_from_manual
 
 
@@ -85,6 +87,61 @@ def skip_lead(conn, lead_id: int, note: str = "") -> None:
     )
 
 
+def research_hints_for_lead(conn, lead_id: int) -> dict:
+    """Load property + case and build people-search URLs. No network, no writes."""
+    row = conn.execute(
+        """
+        SELECT l.property_id, p.owner_of_record, p.situs_address, p.apn,
+               c.defendant_raw, c.county_fips
+        FROM lead l
+        JOIN case_record c ON c.id = l.case_id
+        LEFT JOIN property_record p ON p.id = l.property_id
+        WHERE l.id = ?
+        """,
+        (lead_id,),
+    ).fetchone()
+    if not row:
+        raise ValueError(f"Lead not found: {lead_id}")
+    if not row["property_id"]:
+        raise ValueError(f"Lead {lead_id} has no property — enrich first")
+    situs = row["situs_address"] or ""
+    name = (row["owner_of_record"] or row["defendant_raw"] or "").strip()
+    state = ""
+    try:
+        counties = load_counties()
+        cfg = counties.get(row["county_fips"] or "")
+        if cfg:
+            state = cfg.state
+    except OSError:
+        state = ""
+    street, city, state, zip_code = parse_situs(situs, state=state)
+    urls = build_research_hints(
+        name=name, situs=situs, city=city, state=state, zip_code=zip_code
+    )
+    return {
+        "lead_id": lead_id,
+        "name": name,
+        "situs": situs,
+        "street": street,
+        "city": city,
+        "state": state,
+        "zip": zip_code,
+        "apn": row["apn"] or "",
+        "entity": looks_like_entity(name),
+        "urls": urls,
+    }
+
+
+def format_research_hints(payload: dict) -> str:
+    lines = []
+    header = " — ".join(part for part in (payload.get("name"), payload.get("situs")) if part)
+    if header:
+        lines.append(header)
+    for label, url in (payload.get("urls") or {}).items():
+        lines.append(f"{label}: {url}")
+    return "\n".join(lines) + ("\n" if lines else "")
+
+
 def paste_contact(
     conn,
     lead_id: int,
@@ -137,6 +194,20 @@ def paste_contact(
     )
 
 
+def _csv_text(value):
+    """Neutralize formula prefixes on export; never change stored data.
+
+    CSV consumers vary: this is an initial-open mitigation, not a guarantee
+    after a spreadsheet application saves and reopens the file.
+    """
+    if isinstance(value, str) and value:
+        if value.startswith(("\t", "\r", "\n")) or value.lstrip().startswith(
+            ("=", "+", "-", "@", "＝", "＋", "－", "＠")
+        ):
+            return "'" + value
+    return value
+
+
 def export_csv(conn, status: str = "approved") -> str:
     rows = list_review_queue(conn, status)
     buf = io.StringIO()
@@ -158,11 +229,11 @@ def export_csv(conn, status: str = "approved") -> str:
         "priority_score",
         "review_note",
     ]
-    writer = csv.DictWriter(buf, fieldnames=fields)
+    writer = csv.DictWriter(buf, fieldnames=fields, quoting=csv.QUOTE_ALL)
     writer.writeheader()
     for r in rows:
         writer.writerow(
-            {
+            {key: _csv_text(value) for key, value in {
                 "lead_id": r.get("id"),
                 "case_number": r.get("case_number"),
                 "defendant_raw": r.get("defendant_raw"),
@@ -179,6 +250,6 @@ def export_csv(conn, status: str = "approved") -> str:
                 "pipeline_status": r.get("pipeline_status"),
                 "priority_score": r.get("priority_score"),
                 "review_note": r.get("review_note"),
-            }
+            }.items()}
         )
     return buf.getvalue()

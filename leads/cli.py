@@ -12,16 +12,19 @@ from pathlib import Path
 from adapters.registry import list_enabled_counties
 from leads import db, ledger
 from leads.pipeline import Pipeline
+from leads.readiness import readiness_report
 from leads.http import safe_error
 from leads.observability import configure_logging, event
 from leads.probe import catalog_keys, load_probe_catalog, probe_keys
 from leads.review import (
     approve_lead,
     export_csv,
+    format_research_hints,
     list_review_queue,
     review_summary,
     paste_contact,
     reject_lead,
+    research_hints_for_lead,
     retry_lead,
     skip_lead,
 )
@@ -61,6 +64,18 @@ def cmd_state(args: argparse.Namespace) -> int:
             "last_error": dict(last_err) if last_err else None,
         }
         print(json.dumps(out, indent=2))
+    return 0
+
+
+def cmd_readiness(args: argparse.Namespace) -> int:
+    try:
+        with db.read_only_session(args.db) as conn:
+            report = readiness_report(conn)
+    except Exception as exc:
+        print(f"Readiness check failed: {safe_error(exc)}", file=sys.stderr)
+        return 1
+    print(json.dumps(report, indent=2))
+    # A successful inspection is not a production acceptance verdict.
     return 0
 
 
@@ -126,7 +141,8 @@ def cmd_pipeline(args: argparse.Namespace) -> int:
 
 
 def cmd_review(args: argparse.Namespace) -> int:
-    with db.db_session(args.db) as conn:
+    session = db.read_only_session if args.review_cmd == "research-hints" else db.db_session
+    with session(args.db) as conn:
         try:
             if args.review_cmd == "summary":
                 print(json.dumps(review_summary(conn, args.status), indent=2))
@@ -155,6 +171,12 @@ def cmd_review(args: argparse.Namespace) -> int:
                     address=args.address or "",
                 )
                 print(f"Pasted contact for lead {args.lead_id}")
+            elif args.review_cmd == "research-hints":
+                payload = research_hints_for_lead(conn, args.lead_id)
+                if getattr(args, "json", False):
+                    print(json.dumps(payload, indent=2))
+                else:
+                    print(format_research_hints(payload), end="")
             else:
                 print(f"Unknown review command: {args.review_cmd}", file=sys.stderr)
                 return 2
@@ -267,6 +289,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_state = sub.add_parser("state", help="Counts, errors, review backlog")
     p_state.set_defaults(func=cmd_state)
 
+    p_ready = sub.add_parser("readiness", help="Read-only inventory and contact readiness evidence; no provider calls")
+    p_ready.set_defaults(func=cmd_readiness)
+
     p_run = sub.add_parser("run", help="Ingest + enrich + score")
     p_run.add_argument("--county", help="County name or fips (e.g. harris)")
     p_run.add_argument("--all-enabled", action="store_true")
@@ -313,6 +338,14 @@ def build_parser() -> argparse.ArgumentParser:
     p_paste.add_argument("--email", default="")
     p_paste.add_argument("--address", default="")
     p_paste.set_defaults(func=cmd_review)
+
+    p_hints = review_sub.add_parser(
+        "research-hints",
+        help="Print manual people-search URLs for a lead (no network)",
+    )
+    p_hints.add_argument("lead_id", type=int)
+    p_hints.add_argument("--json", action="store_true", help="Emit JSON instead of labeled URLs")
+    p_hints.set_defaults(func=cmd_review)
 
     p_export = sub.add_parser("export", help="Export leads to CSV")
     p_export.add_argument("--status", default="approved")

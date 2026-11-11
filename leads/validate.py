@@ -29,7 +29,7 @@ def preflight() -> dict[str, Any]:
     fixture_dir = Path(
         os.environ.get(
             "DALLAS_CLERK_FIXTURE_DIR",
-            str(root / "artifacts" / "raw" / "dallas" / "clerk"),
+            str(root / "artifacts" / "raw" / "dallas" / "clerk" / "captures"),
         )
     )
     html_files = sorted(fixture_dir.glob("*.html")) if fixture_dir.exists() else []

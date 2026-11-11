@@ -2,6 +2,25 @@
 
 Use this document as the working spec for extending `re-tax-leads`. Implement in the phase order given in §7 — do not jump ahead to later phases before earlier ones are working and tested.
 
+## Current priority — 2026-09-17
+
+The operator's immediate goal is outreach to both owners and buyers, starting
+with owners. The current repository is a seller research pipeline, not the
+completed marketplace described below. [Launch review](LAUNCH_REVIEW.md) records
+the verified inventory, defects fixed and remaining work.
+
+First validate ownership and obtain real contacts for a small Harris pilot:
+24 Harris leads exist, eight have property matches, and none has contact data.
+Two Dallas rows are samples and must not be used as prospects. Existing
+`needs_review` rows are not resumed by adding a provider key or rerunning ingest.
+Manual verified contact entry is supported; selective paid re-enrichment of this
+review backlog still needs a defined workflow and funded provider account.
+
+Owner outreach drafting/suppression/review is the next product milestone after
+that pilot has verified contact data. Buyer discovery and buyer outreach follow.
+County expansion should not delay the first usable Harris pilot. The numbered
+roadmap below is the broader build plan, not a statement of launch readiness.
+
 ## 0. Mission
 
 Turn `re-tax-leads` from a single-user CSV export tool into a two-sided data marketplace: distressed-property seller leads matched against verified cash-buyer profiles, sold as data/matches — never as a brokered deal. The system automates research, matching, and drafting of outreach as far as legally and technically sound; a human always approves before anything sends and before any contract term is agreed.
@@ -12,7 +31,7 @@ Two parallel pipelines feeding one matching layer:
 
 - **Seller pipeline (exists, extend):** court/tax filings → distressed property → owner contact. This is the current `re-tax-leads` pipeline (`leads/pipeline.py`).
 - **Buyer pipeline (new):** county recorder/deed records → all-cash sales + repeat/LLC buyers → buyer profile (geography, price band, property type, purchase cadence).
-- **Match layer (new):** score seller leads against buyer profiles. The product sold is the match — data, not a brokered deal. This is what keeps the business out of unlicensed-brokerage territory in every state.
+- **Match layer (new):** score seller leads against buyer profiles. The intended product is data/matches. This is a product-design goal, not an established legal classification; repository tests do not establish whether the actual business model meets any state's requirements.
 
 ## 2. Outreach subsystem (new — human-in-the-loop, not autonomous send)
 
@@ -63,7 +82,7 @@ Not "scrape everything nationwide" — PropStream, BatchLeads, DealMachine, and 
    - Dallas tax: live DCAD ASP.NET owner search (`adapters/platforms/dcad_owner.py`).
    - Dallas clerk: Tyler Odyssey Smart Search (`adapters/platforms/dallas_odyssey.py`) with fixture ingest and optional Anti-Captcha reCAPTCHA.
    - Skip-trace: `counties.toml` → `batchdata`; secrets loader; stub fallback if key missing.
-   - **Validate next:** set `BATCHDATA_API_KEY`; for live Dallas clerk set `ANTICAPTCHA_API_KEY` or drop Odyssey HTML into `artifacts/raw/dallas/clerk/`; run `python3 -m leads run --county dallas`.
+   - **Validate next:** authentic Dallas HTML belongs in `artifacts/raw/dallas/clerk/captures/` (or a dedicated `DALLAS_CLERK_FIXTURE_DIR`). Sample captures are rejected by CLI runs. Configure `BATCHDATA_API_KEY` and a bounded spending plan before paid validation. A CAPTCHA service key alone does not enable or authorize live Dallas clerk access.
 2. **Done (code):** Outcomes ledger (§8) — `outcome_event` table, `leads/ledger.py`, `leads ledger log|report|history` CLI, wired into `approve_lead`/`reject_lead`/`skip_lead` so every human review decision already writes a win/loss row. Tests in `tests/test_ledger.py`.
 3. Bootstrap 2–3 new metro counties via the probe pattern (§3).
 4. Build the recorder/buyer-side adapter for one county end-to-end; prove cash-buyer detection works before replicating it.
